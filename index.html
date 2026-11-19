@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Color Shift</title>
+  <meta name="description" content="Upload a photo, get a pushed design direction for a music app.">
+  <meta name="theme-color" content="#0f0e0f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="app">
+
+    <!-- LEFT HALF: the "uploaded" inspiration photo -->
+    <section class="source" id="source" aria-label="Inspiration photo">
+      <img class="source__photo" id="photo" alt="">
+
+      <a class="source__credit" id="credit" target="_blank" rel="noopener"></a>
+
+      <button class="refresh" id="refresh" type="button" aria-label="Upload again" title="Upload again">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 12a8 8 0 1 1-2.34-5.66"/>
+          <path d="M20 4v5h-5"/>
+        </svg>
+      </button>
+
+      <button class="upload" id="upload" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/>
+        </svg>
+        Upload photo
+      </button>
+    </section>
+
+    <!-- RIGHT HALF: waiting veil → fake reading → the design -->
+    <section class="design" id="design" aria-label="Design direction">
+      <div class="veil" aria-hidden="true">
+        <div class="veil__layer veil__layer--a"></div>
+        <div class="veil__layer veil__layer--b"></div>
+      </div>
+
+      <p class="waiting" id="waiting">Nothing yet. The image decides.</p>
+
+      <ol class="reading" id="reading" aria-live="polite"></ol>
+
+      <div class="stage" id="stage">
+        <div class="screen" id="screen">
+          <!-- The music app screen gets built in step 3. -->
+        </div>
+      </div>
+
+      <footer class="design__bar" id="designBar">
+        <span class="design__name" id="styleName"></span>
+        <span class="design__words" id="styleWords"></span>
+      </footer>
+    </section>
+
+    <!-- END STATE: after the 4th photo -->
+    <section class="end" id="end" aria-label="End" hidden>
+      <div class="veil" aria-hidden="true">
+        <div class="veil__layer veil__layer--a"></div>
+        <div class="veil__layer veil__layer--b"></div>
+      </div>
+      <h1 class="end__title">That's the whole playlist.</h1>
+      <p class="end__sub">Four photos, four moods. Hit replay?</p>
+      <button class="upload end__button" id="restart" type="button">Start over</button>
+    </section>
+
+  </main>
+
+  <script src="data/recipes.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
