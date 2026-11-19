@@ -8,8 +8,12 @@
   <meta name="theme-color" content="#0f0e0f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <!-- Tool fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&family=EB+Garamond:wght@400&display=swap" rel="stylesheet">
+  <!-- Style fonts (one pair per recipe) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300&family=DM+Mono:wght@300&family=IM+Fell+English:ital@0;1&family=IBM+Plex+Mono:wght@300;400&family=Anton&family=Bricolage+Grotesque:wght@700;800&family=Big+Shoulders+Display:wght@900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="designs.css">
 </head>
 <body>
   <main class="app">
@@ -50,13 +54,16 @@
 
       <div class="stage" id="stage">
         <div class="screen" id="screen">
-          <!-- The music app screen gets built in step 3. -->
+          <!-- Filled in by designs.js, using the recipe in data/recipes.js -->
         </div>
       </div>
 
       <footer class="design__bar" id="designBar">
         <span class="design__name" id="styleName"></span>
         <span class="design__words" id="styleWords"></span>
+        <span class="design__score" id="score" title="Contrast of text on background (WCAG)"></span>
+        <button class="chip" id="copyGuide" type="button">Copy style guide</button>
+        <button class="chip" id="copyScreen" type="button">Copy screen</button>
       </footer>
     </section>
 
@@ -68,12 +75,20 @@
       </div>
       <h1 class="end__title">That's the whole playlist.</h1>
       <p class="end__sub">Four photos, four moods. Hit replay?</p>
-      <button class="upload end__button" id="restart" type="button">Start over</button>
+      <button class="upload end__button" id="restart" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 12a8 8 0 1 0 2.34-5.66"/><path d="M4 4v5h5"/>
+        </svg>
+        Hit replay
+      </button>
     </section>
 
   </main>
 
   <script src="data/recipes.js"></script>
+  <script src="designs.js"></script>
+  <script src="figma.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

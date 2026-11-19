@@ -10,7 +10,7 @@
 
   --sans: "Geist", system-ui, sans-serif;
   --mono: "Geist Mono", ui-monospace, monospace;
-  --serif: "Instrument Serif", Georgia, serif;
+  --serif: "EB Garamond", Garamond, Georgia, serif;
 
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -92,7 +92,7 @@ button:active { transform: scale(0.96); }
   transition: transform 0.2s var(--ease), background 0.2s, opacity 0.4s var(--ease);
 }
 .upload:hover { background: #fff; }
-.has-photo .upload { opacity: 0; pointer-events: none; }
+.has-photo .source .upload { opacity: 0; pointer-events: none; }
 
 /* Small refresh icon — top right, once a photo is in */
 .refresh {
@@ -143,14 +143,14 @@ button:active { transform: scale(0.96); }
 }
 .veil__layer--a {
   top: 15%;
-  background: radial-gradient(ellipse at center, rgb(var(--silver) / 0.13), transparent 65%);
-  animation: drift 16s ease-in-out infinite alternate;
+  background: radial-gradient(ellipse at center, rgb(var(--silver) / 0.24), transparent 65%);
+  animation: drift 14.4s ease-in-out infinite alternate;
 }
 .veil__layer--b {
   top: 25%;
   left: 10%;
-  background: linear-gradient(100deg, transparent 20%, rgb(var(--silver) / 0.08) 50%, transparent 80%);
-  animation: drift 23s ease-in-out -8s infinite alternate-reverse;
+  background: linear-gradient(100deg, transparent 20%, rgb(var(--silver) / 0.16) 50%, transparent 80%);
+  animation: drift 20.7s ease-in-out -8s infinite alternate-reverse;
 }
 @keyframes drift {
   from { transform: translateY(-28%) rotate(-3deg); }
@@ -166,7 +166,6 @@ button:active { transform: scale(0.96); }
   padding: 24px;
   text-align: center;
   font-family: var(--serif);
-  font-style: italic;
   font-size: clamp(22px, 2.4vw, 34px);
   color: rgb(var(--silver) / 0.6);
   transition: opacity 0.6s var(--ease);
@@ -198,7 +197,6 @@ button:active { transform: scale(0.96); }
 .reading li.is-words {
   margin-top: 10px;
   font-family: var(--serif);
-  font-style: italic;
   font-size: 22px;
   letter-spacing: 0;
   color: rgb(var(--silver) / 0.9);
@@ -218,6 +216,11 @@ button:active { transform: scale(0.96); }
 .screen {
   width: 1440px;
   height: 900px;
+  /* Pin the full-size screen to the exact center, then shrink it from there */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
   flex: none;
   border-radius: 14px;
   overflow: hidden;
@@ -230,25 +233,6 @@ button:active { transform: scale(0.96); }
 .has-design .screen { transform: scale(var(--fit, 0.4)); }
 .has-design .veil,
 .is-reading .waiting { opacity: 0; }
-
-/* Skeleton placeholder content (replaced in step 3) */
-.placeholder {
-  height: 100%;
-  display: grid;
-  place-content: center;
-  gap: 18px;
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 22px;
-  color: rgb(0 0 0 / 0.55);
-}
-.placeholder strong {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 120px;
-  line-height: 1;
-  color: rgb(0 0 0 / 0.8);
-}
 
 /* Bottom bar under the design: style name + mood words (later: score, copy buttons) */
 .design__bar {
@@ -270,8 +254,32 @@ button:active { transform: scale(0.96); }
   transition: opacity 0.6s var(--ease) 0.3s;
 }
 .has-design .design__bar { opacity: 1; }
+.screen--m { width: 390px; height: 844px; border-radius: 44px; }
+
 .design__name { color: var(--text); text-transform: uppercase; }
-.design__words { color: var(--text-dim); }
+.design__words { color: var(--text-dim); margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.design__score {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+}
+.design__score b { color: #8fe3a5; font-weight: 400; margin-right: 6px; }
+.chip {
+  padding: 7px 13px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ease);
+}
+.chip:hover { background: var(--surface); border-color: #454545; }
+.chip.is-done { border-color: #8fe3a5; color: #8fe3a5; }
 
 /* ── End state ──────────────────────────────────────────────────────── */
 .end {
@@ -293,7 +301,6 @@ button:active { transform: scale(0.96); }
   margin: 0;
   font-family: var(--serif);
   font-weight: 400;
-  font-style: italic;
   font-size: clamp(40px, 6vw, 84px);
   line-height: 1;
   color: rgb(var(--silver) / 0.92);
@@ -307,6 +314,8 @@ button:active { transform: scale(0.96); }
   color: rgb(var(--silver) / 0.55);
 }
 .end__button { position: relative; top: auto; left: auto; translate: none; }
+.end__button svg { transition: rotate 0.5s var(--ease); }
+.end__button:hover svg { rotate: -60deg; }
 @keyframes fade-in { from { opacity: 0; } }
 
 /* ── Phone: stacked, photo on top (mobile design comes in step 8) ────── */
@@ -314,6 +323,9 @@ button:active { transform: scale(0.96); }
   .app { grid-template-columns: 1fr; grid-template-rows: 42dvh 1fr; }
   .source { border-right: 0; border-bottom: 1px solid var(--border); }
   .upload { padding: 16px 26px; font-size: 16px; }
+  .design__words, #copyScreen { display: none; }
+  .design__name { margin-right: auto; }
+  .design__bar { gap: 8px; padding: 0 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

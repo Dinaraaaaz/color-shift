@@ -46,9 +46,8 @@ function show(index, { animate }) {
   credit.href = r.photo.photographerUrl;
   credit.textContent = `Photo by ${r.photo.photographer} · Unsplash`;
 
-  // Right: build the design (hidden until reading is done)
-  renderDesign(r);
-
+  // Right: the design is only drawn once the reading moment is over,
+  // so nothing peeks through while the previous design fades out.
   if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     revealDesign();
     return;
@@ -74,9 +73,9 @@ function show(index, { animate }) {
 function revealDesign() {
   busy = false;
   reading.innerHTML = '';
+  renderDesign(recipes[current]);
   app.classList.remove('is-reading');
   app.classList.add('has-design');
-  fitScreen();
 }
 
 function showEnd() {
@@ -94,28 +93,82 @@ function reset() {
   photo.removeAttribute('src');
 }
 
-// ── The design (placeholder until step 3) ──────────────────────────────
+// ── The design ──────────────────────────────────────────────────────────
+
+const phone = matchMedia('(max-width: 760px)');
+const SIZES = { desktop: [1440, 900], mobile: [390, 844] };
+const device = () => (phone.matches ? 'mobile' : 'desktop');
 
 function renderDesign(r) {
-  screen.style.background = r.style.background;
+  const s = r.style;
+  const c = s.colors;
+  const d = device();
+  screen.classList.toggle('screen--m', d === 'mobile');
   screen.innerHTML = `
-    <div class="placeholder">
-      <strong>${r.name}</strong>
-      <span>${r.moodWords.join(' · ')}</span>
-      <span>music screen — build step 3</span>
+    <div class="ms ms--${s.layout}" style="
+      --bg:${c.bg}; --surface:${c.surface}; --text:${c.text}; --muted:${c.muted};
+      --accent:${c.accent}; --glow:${c.glow};
+      --display:'${s.fonts.display}', serif; --body:'${s.fonts.body}', sans-serif;">
+      ${window.DESIGNS[s.layout][d]()}
     </div>`;
+
+  const score = contrast(c.text, c.bg);
   $('styleName').textContent = r.name;
   $('styleWords').textContent = r.moodWords.join(' / ');
+  $('score').innerHTML = `<b>${score.grade} ✓</b>${score.ratio}:1`;
+  fitScreen();
 }
 
-// Scale the 1440×900 screen so it fits its half with some breathing room
+// Scale the screen so it fits its half with some breathing room
 function fitScreen() {
+  const [w, h] = SIZES[device()];
   const box = stage.getBoundingClientRect();
   const pad = Math.min(56, box.width * 0.06);
-  const fit = Math.min((box.width - pad * 2) / 1440, (box.height - pad * 2) / 900);
+  const fit = Math.min((box.width - pad * 2) / w, (box.height - pad * 2) / h);
   screen.style.setProperty('--fit', Math.max(fit, 0.05).toFixed(4));
 }
 addEventListener('resize', fitScreen);
+phone.addEventListener('change', () => { if (current >= 0) renderDesign(recipes[current]); });
+
+// ── Readability score (WCAG 2 contrast) ─────────────────────────────────
+
+function luminance(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  const ratio = (hi + 0.05) / (lo + 0.05);
+  const grade = ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3 ? 'AA Large' : 'Fail';
+  return { ratio: ratio.toFixed(1), grade };
+}
+
+// ── Copy to Figma ───────────────────────────────────────────────────────
+
+async function copyTo(button, makeSVG, filename) {
+  const label = button.textContent;
+  button.textContent = 'Copying…';
+  try {
+    const result = await window.FIGMA.copyOrDownload(await makeSVG(), filename);
+    button.textContent = result === 'copied' ? 'Copied, paste in Figma' : 'Downloaded .svg';
+    button.classList.add('is-done');
+  } catch (e) {
+    console.error(e);
+    button.textContent = 'Couldn’t copy';
+  }
+  setTimeout(() => { button.textContent = label; button.classList.remove('is-done'); }, 2200);
+}
+
+$('copyGuide').addEventListener('click', (e) => {
+  const r = recipes[current];
+  const c = r.style.colors;
+  copyTo(e.currentTarget, () => window.FIGMA.styleGuideSVG(r, contrast(c.text, c.bg)), `${r.id}-style-guide.svg`);
+});
+$('copyScreen').addEventListener('click', (e) => {
+  const r = recipes[current];
+  copyTo(e.currentTarget, () => window.FIGMA.screenSVG(screen), `${r.id}-${device()}-screen.svg`);
+});
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
