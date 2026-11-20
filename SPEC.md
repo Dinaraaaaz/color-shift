@@ -99,6 +99,32 @@ very different corners of the mood map, roughly:
 | **Warm** | e.g. sunlit desert, sand tones | e.g. flowers, vivid market |
 | **Cool** | e.g. fog, misty water | e.g. neon city at night |
 
+### Design 1 · Warm and Calm (formerly "Dunes") — in progress
+
+The first style we're perfecting. We work **one screen at a time**: sketch in
+Figma ("Art Director" page), then try it in code.
+
+- **Layout:** controls sit at the bottom, the illustration takes most of the screen
+  — that's what reads as calm. Exploring **Layout 3.1** and **Layout 2.1** (open:
+  pick one).
+- **References** (folder `References_warm and calm`): grainy, blurry backgrounds,
+  strong abstraction from reality, yellow/orange/ochre tones; plus the end of a
+  Sahara sandstorm clip, where sand fills the whole frame.
+- **Background (current direction: `bg-warm-calm-v2.html`):** an ochre sun
+  (#B87427 center, fading gently to #E8C79B) inside a **slow, calm, billowing
+  sandstorm**.
+  - Sand **churns in place** like smoke, with only a slow drift to the left — the
+    frame itself never feels like it's moving (no dizziness).
+  - Sand stays **calm**: the sun is veiled but always there.
+  - **Grain is fixed to the screen** like paper texture (no flicker, no sliding).
+  - Over the pale top-left sky, the sand is tinted a little warmer so it stays visible.
+  - Built as a shader (graphics-card code); tuning knobs at the top of the file:
+    sand density, wind speed, grain amount.
+  - Earlier version kept for comparison: `bg-warm-calm-v1.html` (dust blobs +
+    straight sideways sand streaks).
+- **Open:** typography, artist picture, final layout, how the background sits
+  behind the elements.
+
 ### Style "recipes" (important for the iOS app later)
 Each style is written down as its own **recipe in a separate data file**: colors,
 fonts, sizes, corner roundness, spacing, texture, layout choices, imagery.
@@ -107,18 +133,25 @@ That way, everything we fine-tune now carries over.
 
 ## 7. The music app screen
 
-A **placeholder** music app. It should feel like a music app without saying so.
+An **immersive "now playing" view**: a full screen you actively choose to open
+while a song plays, and can collapse again. Every style shows the **same moment**:
+one made-up song, paused in the middle of listening.
 
-- **Minimal / placeholder text** — short made-up words, lorem, or text shown as lines
-  and blocks. Don't give away too much what it is.
-- **Music is suggested by shapes:** cover tiles, play button, progress bar,
-  track-list rows, a now-playing bar.
+**Every style has these elements (and nothing else):**
+1. **Artist picture** — what it looks like may vary per style (decided later).
+2. **Artist name — the hero.** Made-up artist: **Ameno Sol**.
+3. **Song title.** Made-up song: **Slow Horizon**. There is **no album name**.
+4. **Control buttons** — shuffle, previous, pause, next, repeat, from our own
+   thin-line icon set (24×24 grid, 1.25px stroke, flat line ends, open arrowheads).
+5. **Progress line** — frozen at **1:49 of 5:00** (about 36% filled).
+6. **Illustration / background** — different per style, may be animated.
+7. **Back button** (upper-left corner) and **collapse button** (upper-right corner,
+   two arrows pointing inward) — same thin-line style.
 
-**Desktop version** (first round) — e.g. sidebar navigation, a big header area,
-a grid of cover tiles, a track list, a now-playing bar at the bottom.
+**Exception:** lyrics may appear in Layout 2.1 only (an experiment for that layout).
 
-**Mobile version** (second round) — e.g. a now-playing screen or home feed sized
-for a phone, built from the same recipe.
+**Desktop first** (1440×900). **Mobile** comes later, as a phone-sized version of
+the same view built from the same recipe.
 
 The *layout* of these parts can change per style (that's part of "pushed") — the
 list above is what's there, not exactly where.
@@ -136,6 +169,9 @@ list above is what's there, not exactly where.
   left half). Cover photos inside the design have **no credits** — the design is a
   vision, not a detailed mockup. (Unsplash's license doesn't require credit.)
 - No AI-generated illustrations.
+- **Backgrounds can be animated graphics made in code** (e.g. noise, grain,
+  gradients). Motion should match the style's mood — and never make the whole
+  frame feel like it's moving.
 
 ## 9. Copy to Figma
 
@@ -184,7 +220,9 @@ and a **"start over"** button. Draft options to pick from or rewrite:
 3. **Desktop music screen** — one neutral version to get the structure right.
 4. **Style recipes** — first pass at all 4 styles.
 5. **Font testing** — font playground, decide together.
-6. **Fine-tuning** — iterate on each style until it feels pushed and right.
+6. **Fine-tuning** — one screen at a time (starting with Warm and Calm): sketch
+   layouts in Figma, try backgrounds/details in code, iterate until it feels pushed
+   and right.
 7. **Figma copy** — test early (can be pulled forward), then polish.
 8. **Mobile** — stacked layout + phone music screen for each style.
 9. **Ship** — commit, push, deploy.
