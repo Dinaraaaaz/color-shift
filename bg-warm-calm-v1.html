@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warm and Calm · background v1</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1410; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  /* The scene is always drawn at 1440×900 and scaled to fit the window */
+  canvas { width: min(100vw, 160vh); aspect-ratio: 1440 / 900; display: block; }
+</style>
+</head>
+<body>
+<canvas id="scene" width="1440" height="900"></canvas>
+<script>
+/* Warm and Calm background: a soft sun seen through slowly drifting desert dust.
+   Layers, back to front: base gradient → sun → 3 dust layers → 2 sand-streak layers → flying specks → film grain. */
+
+const W = 1440, H = 900;
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+// Same random numbers every time you load the page, so the look is repeatable
+let seed = 7;
+const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+/* 1. Base gradient: pale sage-grey sky at the top left, warm toffee/rust at the bottom right */
+const base = makeCanvas(W, H);
+{
+  const b = base.getContext('2d');
+  const g = b.createLinearGradient(380, 0, 1060, 900);
+  g.addColorStop(0.00, '#cfcdc2');
+  g.addColorStop(0.35, '#c6bba6');
+  g.addColorStop(0.58, '#a4805c');
+  g.addColorStop(0.80, '#86603f');
+  g.addColorStop(1.00, '#6c4529');
+  b.fillStyle = g;
+  b.fillRect(0, 0, W, H);
+}
+
+/* 2. The sun: same place and size as the "Sun" ellipse in Figma (760px, centered at 721, 422) */
+const SUN = { x: 721, y: 422, r: 380 };
+function drawSun(t) {
+  const breathe = 1 + 0.018 * Math.sin(t / 9000 * Math.PI * 2);    // grows/shrinks ~2% over 9s
+  const glow = 0.88 + 0.12 * Math.sin(t / 26000 * Math.PI * 2 + 1); // brightness drifts over 26s
+  const r = SUN.r * breathe;
+
+  // soft outer halo (pale sand)
+  let g = ctx.createRadialGradient(SUN.x, SUN.y, r * 0.6, SUN.x, SUN.y, r * 1.45);
+  g.addColorStop(0, `rgba(232, 199, 155, ${0.40 * glow})`);
+  g.addColorStop(1, 'rgba(232, 199, 155, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(SUN.x - r * 1.5, SUN.y - r * 1.5, r * 3, r * 3);
+
+  // the disc: deep ochre center (#B87427) → pale sand edge (#E8C79B), feathered
+  g = ctx.createRadialGradient(SUN.x, SUN.y, 0, SUN.x, SUN.y, r);
+  g.addColorStop(0.00, `rgba(184, 116, 39, ${glow})`);
+  g.addColorStop(0.40, `rgba(205, 152, 90, ${glow})`);
+  g.addColorStop(0.72, `rgba(232, 199, 155, ${0.95 * glow})`);
+  g.addColorStop(0.90, `rgba(232, 199, 155, ${0.55 * glow})`);
+  g.addColorStop(1.00, 'rgba(232, 199, 155, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(SUN.x, SUN.y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* 3. Dust layers: wide, soft, stretched clouds that loop seamlessly sideways.
+   Each layer is painted once into its own picture, then slid across the screen. */
+const TILE = 2160; // 1.5× screen width, so the pattern repeats rarely
+function makeDust({ count, rMin, rMax, stretch, yMin, yMax, color, alpha }) {
+  const c = makeCanvas(TILE, H);
+  const d = c.getContext('2d');
+  for (let i = 0; i < count; i++) {
+    const x = rand() * TILE;
+    const y = yMin + rand() * (yMax - yMin);
+    const r = rMin + rand() * (rMax - rMin);
+    const a = alpha * (0.5 + rand() * 0.5);
+    // draw the cloud at x and wrapped copies, so the left and right edges meet without a seam
+    for (const ox of [-TILE, 0, TILE]) {
+      d.setTransform(stretch, 0, 0, 1, x + ox, y);
+      const g = d.createRadialGradient(0, 0, 0, 0, 0, r);
+      g.addColorStop(0, `rgba(${color}, ${a})`);
+      g.addColorStop(0.5, `rgba(${color}, ${a * 0.55})`);
+      g.addColorStop(1, `rgba(${color}, 0)`);
+      d.fillStyle = g;
+      d.beginPath();
+      d.arc(0, 0, r, 0, Math.PI * 2);
+      d.fill();
+    }
+  }
+  d.setTransform(1, 0, 0, 1, 0, 0);
+  return c;
+}
+
+const dustLayers = [
+  // far: big pale haze high in the sky, moves slowest
+  { img: makeDust({ count: 14, rMin: 220, rMax: 420, stretch: 2.6, yMin: 80,  yMax: 620, color: '214, 196, 168', alpha: 0.30 }),
+    secondsPerLoop: 140, pulse: 31000, phase: 0.0, strength: 1.0 },
+  // middle: ochre dust passing over the sun
+  { img: makeDust({ count: 12, rMin: 160, rMax: 340, stretch: 3.0, yMin: 220, yMax: 760, color: '190, 152, 108', alpha: 0.34 }),
+    secondsPerLoop: 85,  pulse: 23000, phase: 2.1, strength: 1.0 },
+  // near: darker sand low to the ground, moves fastest
+  { img: makeDust({ count: 10, rMin: 140, rMax: 300, stretch: 3.4, yMin: 520, yMax: 960, color: '150, 104, 66',  alpha: 0.36 }),
+    secondsPerLoop: 55,  pulse: 17000, phase: 4.0, strength: 1.0 },
+];
+
+function drawDust(t) {
+  for (const L of dustLayers) {
+    const x = -((t / 1000 / L.secondsPerLoop) * TILE % TILE); // the wind blows right to left
+    // thickness swells and thins slowly, so the sun gets veiled and revealed
+    ctx.globalAlpha = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t / L.pulse * Math.PI * 2 + L.phase));
+    ctx.drawImage(L.img, x, 0);
+    ctx.drawImage(L.img, x + TILE, 0);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* 3b. Blowing sand streaks: long, thin, wispy strands sweeping sideways,
+   like sand blown off a dune crest. Each streak is a bundle of a few thin strands. */
+function makeStreaks({ count, yMin, yMax, color, alpha }) {
+  const c = makeCanvas(TILE, H);
+  const d = c.getContext('2d');
+  for (let i = 0; i < count; i++) {
+    const x = rand() * TILE;
+    const y = yMin + rand() * (yMax - yMin);
+    const length = 260 + rand() * 520;           // how long the streak is
+    const tilt = (rand() - 0.5) * 0.09;          // a slight slope, a few degrees
+    const strands = 3 + Math.floor(rand() * 4);
+    for (let s = 0; s < strands; s++) {
+      const sy = y + (rand() - 0.5) * 34;        // strands spread a little up and down
+      const sx = x + (rand() - 0.5) * length * 0.5;
+      const thick = 3 + rand() * 9;
+      const a = alpha * (0.4 + rand() * 0.6);
+      const len = length * (0.5 + rand() * 0.5);
+      const stretch = len / thick;
+      for (const ox of [-TILE, 0, TILE]) {
+        d.setTransform(stretch * Math.cos(tilt), stretch * Math.sin(tilt), -Math.sin(tilt), Math.cos(tilt), sx + ox, sy);
+        const g = d.createRadialGradient(0, 0, 0, 0, 0, thick);
+        g.addColorStop(0, `rgba(${color}, ${a})`);
+        g.addColorStop(0.6, `rgba(${color}, ${a * 0.35})`);
+        g.addColorStop(1, `rgba(${color}, 0)`);
+        d.fillStyle = g;
+        d.beginPath();
+        d.arc(0, 0, thick, 0, Math.PI * 2);
+        d.fill();
+      }
+    }
+  }
+  d.setTransform(1, 0, 0, 1, 0, 0);
+  return c;
+}
+
+const streakLayers = [
+  // pale streaks drifting across the middle, over the sun
+  { img: makeStreaks({ count: 34, yMin: 120, yMax: 700, color: '238, 218, 186', alpha: 0.32 }),
+    secondsPerLoop: 32, pulse: 13000, phase: 0.6 },
+  // warmer, faster streaks lower down, closer to the ground
+  { img: makeStreaks({ count: 30, yMin: 480, yMax: 880, color: '214, 170, 116', alpha: 0.30 }),
+    secondsPerLoop: 21, pulse: 9500, phase: 2.4 },
+];
+
+function drawStreaks(t) {
+  for (const L of streakLayers) {
+    const x = -((t / 1000 / L.secondsPerLoop) * TILE % TILE);
+    // gusts: the streaks fade in and out slowly
+    ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / L.pulse * Math.PI * 2 + L.phase));
+    ctx.drawImage(L.img, x, 0);
+    ctx.drawImage(L.img, x + TILE, 0);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* 4. Flying specks: a sparse layer of tiny light sand particles drifting with the wind */
+const specks = makeCanvas(TILE, H);
+{
+  const s = specks.getContext('2d');
+  for (let i = 0; i < 900; i++) {
+    const v = 200 + rand() * 55;
+    s.fillStyle = `rgba(${v}, ${v - 18}, ${v - 45}, ${0.10 + rand() * 0.25})`;
+    s.fillRect(rand() * TILE, rand() * H, 1 + rand() * 1.5, 1);
+  }
+}
+function drawSpecks(t) {
+  const x = -((t / 1000 / 40) * TILE % TILE);
+  ctx.drawImage(specks, x, 0);
+  ctx.drawImage(specks, x + TILE, 0);
+}
+
+/* 5. Film grain: one random-noise picture that slides slowly sideways with the wind (no flicker) */
+const GRAIN = 512;
+const grain = makeCanvas(GRAIN, GRAIN);
+{
+  const g = grain.getContext('2d');
+  const img = g.createImageData(GRAIN, GRAIN);
+  // each pixel is either a light or a dark speck, mostly see-through (no blend mode needed)
+  for (let i = 0; i < img.data.length; i += 4) {
+    const light = Math.random() < 0.5;
+    img.data[i] = light ? 255 : 40;
+    img.data[i + 1] = light ? 246 : 28;
+    img.data[i + 2] = light ? 228 : 18;
+    img.data[i + 3] = Math.random() * 34;
+  }
+  g.putImageData(img, 0, 0);
+}
+const grainPattern = ctx.createPattern(grain, 'repeat');
+function drawGrain(t) {
+  // 24px per second to the left, with a tiny slow up-and-down sway; whole pixels keep it crisp
+  const gx = Math.floor((t / 1000) * 24) % GRAIN;
+  const gy = Math.floor(6 * Math.sin(t / 7000));
+  ctx.save();
+  ctx.translate(-gx, gy);
+  ctx.fillStyle = grainPattern;
+  ctx.fillRect(gx, -gy, W, H);
+  ctx.restore();
+}
+
+function frame(t) {
+  ctx.drawImage(base, 0, 0);
+  drawSun(t);
+  drawDust(t);
+  drawStreaks(t);
+  drawSpecks(t);
+  drawGrain(t);
+}
+
+// Respect "reduce motion" settings: show one still frame instead of animating
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (still) {
+  frame(12000);
+} else {
+  const loop = (t) => { frame(t); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
