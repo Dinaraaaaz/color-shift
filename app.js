@@ -32,6 +32,7 @@ function upload() {
 
 function show(index, { animate }) {
   clearTimers();
+  collapse();
   end.hidden = true;
   current = index;
   const r = recipes[index];
@@ -85,6 +86,7 @@ function showEnd() {
 
 function reset() {
   clearTimers();
+  collapse();
   busy = false;
   current = -1;
   end.hidden = true;
@@ -112,6 +114,13 @@ function renderDesign(r) {
       ${window.DESIGNS[s.layout][d]()}
     </div>`;
 
+  // A "live" design is its own interactive page (e.g. the Warm and Calm prototype)
+  const live = s.live && d === 'desktop';
+  app.classList.toggle('is-live', !!live);
+  if (live) screen.innerHTML = `<iframe class="live" src="${s.live}" title="${r.name}, live design"></iframe>`;
+  // Copying a live design to Figma isn't supported yet (its background is animated code)
+  $('copyScreen').hidden = !!live;
+
   const score = contrast(c.text, c.bg);
   $('styleName').textContent = r.name;
   $('styleWords').textContent = r.moodWords.join(' / ');
@@ -126,7 +135,25 @@ function fitScreen() {
   const pad = Math.min(56, box.width * 0.06);
   const fit = Math.min((box.width - pad * 2) / w, (box.height - pad * 2) / h);
   screen.style.setProperty('--fit', Math.max(fit, 0.05).toFixed(4));
+  // full-screen size: as big as the window allows
+  screen.style.setProperty('--fit-full', Math.min(innerWidth / w, innerHeight / h).toFixed(4));
 }
+
+// ── Expand: show the design full screen ─────────────────────────────────
+// The same screen element grows, so a live design keeps playing without restarting.
+
+function expand() {
+  if (!app.classList.contains('has-design')) return;
+  fitScreen();
+  app.classList.add('is-expanded');
+}
+function collapse() { app.classList.remove('is-expanded'); }
+
+$('expand').addEventListener('click', expand);
+$('expandClose').addEventListener('click', collapse);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') collapse(); });
+// The live design's own collapse/back buttons (and Esc inside it) send a message
+addEventListener('message', (e) => { if (e.data && e.data.colorShift === 'collapse') collapse(); });
 addEventListener('resize', fitScreen);
 phone.addEventListener('change', () => { if (current >= 0) renderDesign(recipes[current]); });
 

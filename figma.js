@@ -12,7 +12,8 @@
     const f = r.style.fonts;
     const W = 1200, H = 780;
     const swatches = Object.entries(c);
-    const sw = 150, gap = 22, sx = 60, sy = 300;
+    const gap = 22, sx = 60, sy = 300;
+    const sw = Math.min(150, Math.floor((W - sx * 2 - gap * (swatches.length - 1)) / swatches.length));
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="${c.bg}"/>

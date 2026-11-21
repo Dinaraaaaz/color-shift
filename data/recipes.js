@@ -7,7 +7,7 @@
 window.RECIPES = [
   {
     "id": "warm-calm",
-    "name": "Dunes",
+    "name": "Warm and Calm",
     "moodWords": [
       "meditative",
       "warm",
@@ -24,24 +24,26 @@ window.RECIPES = [
     },
     "style": {
       "layout": "dunes",
+      "live": "warm-calm-prototype.html",
       "colors": {
-        "bg": "#efe6da",
-        "surface": "#e6d6c3",
-        "text": "#3b2a1e",
-        "muted": "#7a6352",
-        "accent": "#c08a5a",
-        "glow": "#ecc79c"
+        "bg": "#6b4a31",
+        "surface": "#c6bba6",
+        "text": "#f6ead6",
+        "muted": "#d8c8b0",
+        "accent": "#b87427",
+        "glow": "#e8c79b",
+        "hover": "#b27733"
       },
       "fonts": {
         "display": "Cormorant Garamond",
-        "displayStyle": "300 italic",
+        "displayStyle": "400 upright (artist), 300 italic (lyrics)",
         "body": "DM Mono",
         "bodyStyle": "300, uppercase, wide tracking"
       },
-      "radius": "arches: full round on top, square at the bottom",
-      "texture": "fine sun grain",
-      "imagery": "none: sun discs, arches and soft gradients",
-      "idea": "No sidebar, no boxes. One sun, one horizon line (the progress bar), and a lot of nothing. Covers are arches, the track list reads like a single slow sentence."
+      "radius": "circles only: the sun, the pause ring",
+      "texture": "still film grain over slowly billowing sand",
+      "imagery": "animated sandstorm: an ochre sun veiled by drifting sand",
+      "idea": "An immersive now-playing view. The sandstorm is the stage; thin cream lines and type whisper on top. Lyrics drift up line by line, and the wind calms when you pause."
     }
   },
   {

@@ -260,6 +260,41 @@ button:active { transform: scale(0.96); }
 .has-design .veil,
 .is-reading .waiting { opacity: 0; }
 
+/* A live design (an interactive prototype page) sits inside the screen frame */
+.screen .live { display: block; width: 100%; height: 100%; border: 0; }
+
+/* Expand button: top right of the design half, mirrors the refresh button on the photo */
+.app .expand, .app .expand-close { opacity: 0; pointer-events: none; }  /* hidden until needed */
+.app.has-design .expand { opacity: 1; pointer-events: auto; }
+.expand:hover svg, .expand-close:hover svg { rotate: none; }  /* no spin, unlike refresh */
+.expand svg, .expand-close svg { transition: scale 0.25s var(--ease); }
+.expand:hover svg { scale: 1.12; }
+.expand-close:hover svg { scale: 0.88; }
+.expand-close { position: fixed; z-index: 52; }
+
+/* Full screen: the design fills the window at the largest size that fits */
+.design::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(0 0 0 / 0.92);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease);
+}
+.is-expanded .design::before { opacity: 1; pointer-events: auto; }
+.is-expanded .screen {
+  position: fixed;
+  z-index: 51;
+  border-radius: 0;
+  transform: scale(var(--fit-full, 1));
+  animation: expand-in 0.5s var(--ease);
+}
+@keyframes expand-in { from { opacity: 0; } }
+/* designs without their own collapse button get the tool's close button */
+.app.is-expanded:not(.is-live) .expand-close { opacity: 1; pointer-events: auto; }
+
 /* Bottom bar under the design: style name + mood words (later: score, copy buttons) */
 .design__bar {
   position: absolute;

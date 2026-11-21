@@ -58,6 +58,21 @@
         </div>
       </div>
 
+      <button class="refresh expand" id="expand" type="button" aria-label="Expand design" title="Expand">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 4h6v6"/><path d="M20 4l-6 6"/><path d="M10 20H4v-6"/><path d="M4 20l6-6"/>
+        </svg>
+      </button>
+
+      <!-- Close button for full-screen designs that don't have their own collapse button -->
+      <button class="refresh expand-close" id="expandClose" type="button" aria-label="Close full screen" title="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 4l-6 6"/><path d="M14 5v5h5"/><path d="M4 20l6-6"/><path d="M5 14h5v5"/>
+        </svg>
+      </button>
+
       <footer class="design__bar" id="designBar">
         <span class="design__name" id="styleName"></span>
         <span class="design__words" id="styleWords"></span>

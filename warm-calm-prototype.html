@@ -347,6 +347,12 @@ function setPlaying(p) {
   playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
   ui.classList.toggle('paused', !p);
 }
+/* ── Inside Color Shift: back, collapse and Esc close the full-screen view ── */
+function askToCollapse() { if (window.parent !== window) window.parent.postMessage({ colorShift: 'collapse' }, '*'); }
+document.querySelector('.top .back').addEventListener('click', askToCollapse);
+document.querySelector('.top .collapse').addEventListener('click', askToCollapse);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') askToCollapse(); });
+
 function togglePlay() {
   if (!playing && position >= SONG_LENGTH) position = 0;   // at the end, play starts the song over
   setPlaying(!playing);
