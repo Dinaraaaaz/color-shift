@@ -20,7 +20,7 @@
     --cream:       #f6ead6;               /* main text and icons */
     --cream-soft:  rgba(246, 234, 214, 0.72); /* secondary text */
     --cream-faint: rgba(246, 234, 214, 0.28); /* progress track */
-    --ink:         #3b2a1e;               /* dark brown, for icons on the pale sky */
+    --hover:       #b27733;               /* icon hover color */
     --ochre:       #b87427;
     --sand:        #e8c79b;
 
@@ -59,9 +59,11 @@
   button {
     all: unset; cursor: pointer; display: grid; place-items: center;
     width: 48px; height: 48px; color: var(--cream);
-    opacity: 0.86; transition: opacity 0.4s ease, transform 0.4s ease;
+    opacity: 0.86;
   }
-  button:hover { opacity: 1; }
+  /* Hover (and keyboard focus): icons turn ochre. Opacity stays the same.
+     Control buttons change instantly, with no animation. */
+  button:hover, button:focus-visible { color: var(--hover); }
   button:focus-visible { outline: 1px solid var(--cream-soft); outline-offset: 2px; border-radius: 50%; }
 
   /* ── Top corners: back + collapse ── */
@@ -70,6 +72,19 @@
     display: flex; justify-content: space-between;
   }
   .top .icon { width: 48px; height: 48px; }   /* iteration 1: bigger and light */
+
+  /* Corner buttons get a small directional nudge on hover, the usual pattern for
+     navigation icons: the motion hints at what the button does.
+     Back slides a little to the left; collapse pinches inward. Quick and soft. */
+  .top button { transition: color 0.2s ease; }
+  .top .icon { transition: transform 0.25s cubic-bezier(.2, .8, .2, 1); }
+  .top .back:hover .icon, .top .back:focus-visible .icon { transform: translateX(-4px); }
+  .top .collapse:hover .icon, .top .collapse:focus-visible .icon { transform: scale(0.88); }
+  @media (prefers-reduced-motion: reduce) {
+    .top .icon { transition: none; }
+    .top .back:hover .icon, .top .collapse:hover .icon,
+    .top .back:focus-visible .icon, .top .collapse:focus-visible .icon { transform: none; }
+  }
 
   /* ── Bottom band: artist on the left, player on the right (Layout 2.1) ── */
   .bottom {
@@ -104,13 +119,12 @@
     height: 64px;
   }
   .controls .toggle.off { opacity: 0.45; }
-  .controls .toggle.off:hover { opacity: 0.7; }
   .play {
     width: 64px; height: 64px; border-radius: 50%;
     border: var(--stroke) solid var(--cream); box-sizing: border-box; opacity: 1;
     background: rgba(255, 255, 255, 0.10);
   }
-  .play:hover { background: rgba(255, 255, 255, 0.16); }
+  .play:hover, .play:focus-visible { border-color: var(--hover); }   /* ring + icon turn ochre, fill stays */
 
   /* Lyrics window: one line tall. Lines slide up through it: the old line rises and
      fades out at the top, the next one rises in from below. Soft edges via a mask. */
@@ -157,10 +171,10 @@
   <div class="shade"></div>
 
   <div class="top">
-    <button aria-label="Back">
+    <button class="back" aria-label="Back">
       <svg class="icon" viewBox="0 0 24 24"><path d="M20 12H4.5"/><path d="M10.5 6L4.5 12L10.5 18"/></svg>
     </button>
-    <button aria-label="Collapse">
+    <button class="collapse" aria-label="Collapse">
       <svg class="icon" viewBox="0 0 24 24"><path d="M20 4L14 10"/><path d="M14 5V10H19"/><path d="M4 20L10 14"/><path d="M5 14H10V19"/></svg>
     </button>
   </div>
