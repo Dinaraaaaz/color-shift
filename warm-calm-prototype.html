@@ -6,7 +6,7 @@
 <title>Warm and Calm · prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
   /* ── Tokens ───────────────────────────────────────────────
      8px grid: every margin, padding and gap is a multiple of 8. */
@@ -26,7 +26,7 @@
 
     --serif: 'Cormorant Garamond', Georgia, serif;
     --mono:  'DM Mono', ui-monospace, monospace;
-    --stroke: 1.25px;
+    --stroke: 2.5px;   /* iteration 1: bolder lines everywhere (was 1.25px) */
   }
 
   html, body { margin: 0; height: 100%; background: #1a1410; overflow: hidden; }
@@ -69,9 +69,7 @@
     position: absolute; top: var(--space-4); left: var(--space-8); right: var(--space-8);
     display: flex; justify-content: space-between;
   }
-  .top button { width: 32px; height: 32px; margin: -4px; }   /* 24px icon, centered on the 32px edge */
-  .top .icon { width: 24px; height: 24px; }
-  .top button { color: var(--ink); }     /* the sky up here is pale, so the icons are dark */
+  .top .icon { width: 48px; height: 48px; }   /* iteration 1: bigger and light */
 
   /* ── Bottom band: artist on the left, player on the right (Layout 2.1) ── */
   .bottom {
@@ -81,25 +79,21 @@
   }
 
   .artist { display: flex; flex-direction: column; }
-  /* Artist picture: a tiny sun, with a thin orbit line around it */
+  /* Artist picture: a tiny sun (iteration 1: no orbit ring, bigger disc) */
   .pic {
     position: relative; width: 88px; height: 88px; margin-bottom: var(--space-3);
   }
-  .pic::before {          /* the disc */
-    content: ''; position: absolute; inset: 8px; border-radius: 50%;
+  .pic::before {
+    content: ''; position: absolute; inset: 4px; border-radius: 50%;  /* 4px: deliberate half step */
     background: radial-gradient(circle at 50% 50%, var(--ochre) 0%, #cd9a5a 45%, var(--sand) 100%);
     box-shadow: 0 0 24px rgba(232, 199, 155, 0.35);
   }
-  .pic::after {           /* the orbit */
-    content: ''; position: absolute; inset: 0; border-radius: 50%;
-    border: var(--stroke) solid var(--cream-soft);
-  }
-  .name {
-    margin: 0; font-family: var(--serif); font-style: italic; font-weight: 300;
+  .name {   /* iteration 1: upright Regular instead of light italic */
+    margin: 0; font-family: var(--serif); font-style: normal; font-weight: 400;
     font-size: 64px; line-height: 64px; letter-spacing: -0.01em;
   }
   .song {
-    margin: var(--space-1) 0 0; font-size: 12px; line-height: 16px;
+    margin: var(--space-1) 0 0; font-size: 16px; line-height: 16px;
     letter-spacing: 0.16em; text-transform: uppercase; color: var(--cream-soft);
   }
 
@@ -114,16 +108,27 @@
   .play {
     width: 64px; height: 64px; border-radius: 50%;
     border: var(--stroke) solid var(--cream); box-sizing: border-box; opacity: 1;
+    background: rgba(255, 255, 255, 0.10);
   }
-  .play:hover { background: rgba(246, 234, 214, 0.08); }
+  .play:hover { background: rgba(255, 255, 255, 0.16); }
 
-  .lyric {
-    margin: var(--space-4) 0 0; height: 40px;
-    text-align: center; font-family: var(--serif); font-style: italic; font-weight: 300;
-    font-size: 28px; line-height: 40px; color: var(--cream);
+  /* Lyrics window: one line tall. Lines slide up through it: the old line rises and
+     fades out at the top, the next one rises in from below. Soft edges via a mask. */
+  .lyrics {
+    position: relative; margin-top: var(--space-4); height: 40px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 40%, #000 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 40%, #000 80%, transparent 100%);
     transition: opacity 0.8s ease;
   }
-  .paused .lyric { opacity: 0.5; }
+  .lyric {
+    position: absolute; left: 0; right: 0; top: 0; margin: 0;
+    text-align: center; font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 24px; line-height: 40px; color: var(--cream);
+    transition: transform 0.54s cubic-bezier(.4, 0, .2, 1), opacity 0.54s ease;
+  }
+  .lyric.below { transform: translateY(32px); opacity: 0; transition: none; }
+  .lyric.above { transform: translateY(-32px); opacity: 0; }
+  .paused .lyrics { opacity: 0.5; }
 
   .progress {
     position: relative; margin-top: var(--space-4); height: 16px;
@@ -138,9 +143,10 @@
     position: absolute; left: 36.33%; top: 0; height: 16px;
     border-left: var(--stroke) solid var(--cream);
   }
+  .progress .track, .progress .fill { margin-top: -1.25px; }   /* center the 2.5px line */
   .times {
     margin-top: var(--space-1); display: flex; justify-content: space-between;
-    font-size: 12px; line-height: 16px; letter-spacing: 0.08em; color: var(--cream-soft);
+    font-size: 16px; line-height: 16px; font-variant-numeric: tabular-nums; letter-spacing: 0.08em; color: var(--cream-soft);
   }
 </style>
 </head>
@@ -185,12 +191,12 @@
         </button>
       </div>
 
-      <p class="lyric">and the wind keeps the shape of where we stood</p>
+      <div class="lyrics" id="lyrics" aria-live="polite"></div>
 
-      <div class="progress" aria-label="1:49 of 5:00">
-        <div class="track"></div><div class="fill"></div><div class="head"></div>
+      <div class="progress" id="progress" aria-label="1:49 of 5:00">
+        <div class="track"></div><div class="fill" id="fill"></div><div class="head" id="head"></div>
       </div>
-      <div class="times"><span>1:49</span><span>5:00</span></div>
+      <div class="times"><span id="now">1:49</span><span>5:00</span></div>
     </div>
   </div>
 </div>
@@ -204,7 +210,117 @@ function fit() {
 }
 addEventListener('resize', fit); fit();
 
-/* ── Play / pause, shuffle, repeat (prototype only: the song stays at 1:49) ── */
+/* ── The song: plays in real time from 1:49, stops at 5:00 ── */
+const SONG_LENGTH = 300;   // 5:00 in seconds
+const START_AT = 109;      // 1:49
+const LINE_SECONDS = 2;    // a new lyric line every 2 seconds
+// The lyrics loop around when they run out; timed so line 22 starts right at 1:49.
+
+/* LYRICS of "Slow Horizon" by Ameno Sol (made up), one entry per line, in order.
+   Line 22 (1:49–1:54) is the one we see first. */
+const PRE = [
+  "and I don't need the road to end",
+  "I don't need to know",
+  'just let the light come softly',
+  'let the light come slow',
+];
+const CHORUS = [
+  'slow horizon, carry me',
+  'where the sky gives way to gold',
+  'slow horizon, let it be',
+  'the warmest thing I hold',
+  'every grain remembers',
+  'every step we made',
+  'slow horizon, stay with me',
+  'until the colors fade',
+];
+const LYRICS = [
+  // verse 1
+  'the morning comes in amber',
+  'slow across the dunes',
+  'you left your coat beside the door',
+  'and half a song in tune',
+  'I count the ripples in the sand',
+  'like pages left unread',
+  'the sun hangs low and patient',
+  'over everything you said',
+  ...PRE,
+  ...CHORUS,
+  // verse 2
+  'the afternoon is breathing',
+  'and the wind keeps the shape of where we stood',
+  'your voice is in the shimmer',
+  'like I always knew it would',
+  'the hours drift like feathers',
+  'nothing here is lost',
+  'just sand that moves in circles',
+  'and the warmth of what it cost',
+  ...PRE,
+  ...CHORUS,
+  // bridge
+  'if the storm comes rolling in',
+  "I'll close my eyes and stay",
+  'the sun is still behind it',
+  'it never went away',
+  'oh, it never went away',
+  'it never went away',
+  ...CHORUS,
+  // outro
+  'slow horizon',
+  'slow horizon, carry me',
+  'where the sky gives way to gold',
+  'the amber, oh, the amber',
+  'the warm and quiet glow',
+  'slow horizon, let it go',
+];
+
+let position = START_AT;
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const fillEl = document.getElementById('fill'), headEl = document.getElementById('head');
+const nowEl = document.getElementById('now'), progressEl = document.getElementById('progress');
+const lyricsEl = document.getElementById('lyrics');
+let lineIndex = -1, currentLine = null;
+
+function showLine(i) {
+  if (i === lineIndex) return;
+  lineIndex = i;
+  const next = document.createElement('p');
+  next.className = 'lyric below';
+  next.textContent = LYRICS[i] || '';
+  lyricsEl.appendChild(next);
+  if (currentLine) {                       // the old line rises and fades out, then is removed
+    const old = currentLine;
+    old.classList.add('above');
+    setTimeout(() => old.remove(), 800);
+  }
+  next.getBoundingClientRect();            // let the browser register the start position…
+  next.classList.remove('below');          // …then rise in from below
+  currentLine = next;
+}
+
+function renderProgress() {
+  const pct = (position / SONG_LENGTH * 100).toFixed(3) + '%';
+  fillEl.style.width = pct;
+  headEl.style.left = pct;
+  nowEl.textContent = fmt(position);
+  progressEl.setAttribute('aria-label', `${fmt(position)} of 5:00`);
+  const steps = Math.floor((position - START_AT) / LINE_SECONDS);
+  const n = LYRICS.length;
+  showLine((((21 + steps) % n) + n) % n);
+}
+
+let lastTick = null;
+function tick(ms) {
+  if (lastTick !== null && playing) {
+    position += (ms - lastTick) / 1000;
+    if (position >= SONG_LENGTH) { position = SONG_LENGTH; setPlaying(false); }
+    renderProgress();
+  }
+  lastTick = ms;
+  requestAnimationFrame(tick);
+}
+
+/* ── Play / pause, shuffle, repeat ── */
 const ui = document.getElementById('ui');
 const playBtn = document.getElementById('play');
 const playIcon = document.getElementById('playIcon');
@@ -217,8 +333,14 @@ function setPlaying(p) {
   playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
   ui.classList.toggle('paused', !p);
 }
-playBtn.addEventListener('click', () => setPlaying(!playing));
-addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); setPlaying(!playing); } });
+function togglePlay() {
+  if (!playing && position >= SONG_LENGTH) position = 0;   // at the end, play starts the song over
+  setPlaying(!playing);
+}
+playBtn.addEventListener('click', togglePlay);
+addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); togglePlay(); } });
+renderProgress();
+requestAnimationFrame(tick);
 for (const id of ['shuffle', 'repeat']) {
   const b = document.getElementById(id);
   b.addEventListener('click', () => {
