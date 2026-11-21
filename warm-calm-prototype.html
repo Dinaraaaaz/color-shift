@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warm and Calm · prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens ───────────────────────────────────────────────
+     8px grid: every margin, padding and gap is a multiple of 8. */
+  :root {
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+    --space-8: 64px;
+
+    --cream:       #f6ead6;               /* main text and icons */
+    --cream-soft:  rgba(246, 234, 214, 0.72); /* secondary text */
+    --cream-faint: rgba(246, 234, 214, 0.28); /* progress track */
+    --ink:         #3b2a1e;               /* dark brown, for icons on the pale sky */
+    --ochre:       #b87427;
+    --sand:        #e8c79b;
+
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --mono:  'DM Mono', ui-monospace, monospace;
+    --stroke: 1.25px;
+  }
+
+  html, body { margin: 0; height: 100%; background: #1a1410; overflow: hidden; }
+
+  /* The screen is always 1440×900, scaled to fit the window */
+  .stage {
+    position: absolute; left: 50%; top: 50%;
+    width: 1440px; height: 900px;
+    transform-origin: 0 0;
+    overflow: hidden;
+    color: var(--cream);
+    font-family: var(--mono);
+  }
+  .stage canvas { position: absolute; inset: 0; width: 1440px; height: 900px; }
+
+  /* A soft dusk shadow rising from the ground, so the text stays readable over the sand */
+  .shade {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom,
+      rgba(52, 32, 18, 0) 48%,
+      rgba(52, 32, 18, 0.36) 70%,
+      rgba(52, 32, 18, 0.66) 100%);
+  }
+
+  /* ── Thin-line icons (same style as the Figma set) ── */
+  .icon { width: 28px; height: 28px; fill: none; stroke: currentColor;
+          stroke-linecap: butt; stroke-linejoin: miter; }
+  .icon path { stroke-width: var(--stroke); vector-effect: non-scaling-stroke; }
+
+  button {
+    all: unset; cursor: pointer; display: grid; place-items: center;
+    width: 48px; height: 48px; color: var(--cream);
+    opacity: 0.86; transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  button:hover { opacity: 1; }
+  button:focus-visible { outline: 1px solid var(--cream-soft); outline-offset: 2px; border-radius: 50%; }
+
+  /* ── Top corners: back + collapse ── */
+  .top {
+    position: absolute; top: var(--space-4); left: var(--space-8); right: var(--space-8);
+    display: flex; justify-content: space-between;
+  }
+  .top button { width: 32px; height: 32px; margin: -4px; }   /* 24px icon, centered on the 32px edge */
+  .top .icon { width: 24px; height: 24px; }
+  .top button { color: var(--ink); }     /* the sky up here is pale, so the icons are dark */
+
+  /* ── Bottom band: artist on the left, player on the right (Layout 2.1) ── */
+  .bottom {
+    position: absolute; left: var(--space-8); right: var(--space-8); bottom: var(--space-8);
+    display: grid; grid-template-columns: 280px 1fr; column-gap: var(--space-8);
+    align-items: end;
+  }
+
+  .artist { display: flex; flex-direction: column; }
+  /* Artist picture: a tiny sun, with a thin orbit line around it */
+  .pic {
+    position: relative; width: 88px; height: 88px; margin-bottom: var(--space-3);
+  }
+  .pic::before {          /* the disc */
+    content: ''; position: absolute; inset: 8px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--ochre) 0%, #cd9a5a 45%, var(--sand) 100%);
+    box-shadow: 0 0 24px rgba(232, 199, 155, 0.35);
+  }
+  .pic::after {           /* the orbit */
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    border: var(--stroke) solid var(--cream-soft);
+  }
+  .name {
+    margin: 0; font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 64px; line-height: 64px; letter-spacing: -0.01em;
+  }
+  .song {
+    margin: var(--space-1) 0 0; font-size: 12px; line-height: 16px;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--cream-soft);
+  }
+
+  .player { display: flex; flex-direction: column; }
+
+  .controls {
+    display: flex; justify-content: center; align-items: center; gap: var(--space-4);
+    height: 64px;
+  }
+  .controls .toggle.off { opacity: 0.45; }
+  .controls .toggle.off:hover { opacity: 0.7; }
+  .play {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: var(--stroke) solid var(--cream); box-sizing: border-box; opacity: 1;
+  }
+  .play:hover { background: rgba(246, 234, 214, 0.08); }
+
+  .lyric {
+    margin: var(--space-4) 0 0; height: 40px;
+    text-align: center; font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 28px; line-height: 40px; color: var(--cream);
+    transition: opacity 0.8s ease;
+  }
+  .paused .lyric { opacity: 0.5; }
+
+  .progress {
+    position: relative; margin-top: var(--space-4); height: 16px;
+  }
+  .progress .track, .progress .fill {
+    position: absolute; left: 0; top: 50%; height: 0;
+    border-top: var(--stroke) solid var(--cream-faint);
+  }
+  .progress .track { right: 0; }
+  .progress .fill { width: 36.33%; border-top-color: var(--cream); }  /* 1:49 of 5:00 */
+  .progress .head {                                                    /* thin playhead tick */
+    position: absolute; left: 36.33%; top: 0; height: 16px;
+    border-left: var(--stroke) solid var(--cream);
+  }
+  .times {
+    margin-top: var(--space-1); display: flex; justify-content: space-between;
+    font-size: 12px; line-height: 16px; letter-spacing: 0.08em; color: var(--cream-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="sand" width="1440" height="900"></canvas>
+  <div class="shade"></div>
+
+  <div class="top">
+    <button aria-label="Back">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 12H4.5"/><path d="M10.5 6L4.5 12L10.5 18"/></svg>
+    </button>
+    <button aria-label="Collapse">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 4L14 10"/><path d="M14 5V10H19"/><path d="M4 20L10 14"/><path d="M5 14H10V19"/></svg>
+    </button>
+  </div>
+
+  <div class="bottom" id="ui">
+    <div class="artist">
+      <div class="pic" role="img" aria-label="Ameno Sol"></div>
+      <h1 class="name">Ameno Sol</h1>
+      <p class="song">Slow Horizon</p>
+    </div>
+
+    <div class="player">
+      <div class="controls">
+        <button class="toggle off" id="shuffle" aria-label="Shuffle" aria-pressed="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 7H7.5L16.5 17H21"/><path d="M3 17H7.5L10.6 13.5"/><path d="M13.4 10.5L16.5 7H21"/><path d="M18 4L21 7L18 10"/><path d="M18 14L21 17L18 20"/></svg>
+        </button>
+        <button aria-label="Previous song">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6.5L9.5 12L18 17.5Z"/><path d="M6 6V18"/></svg>
+        </button>
+        <button class="play" id="play" aria-label="Pause">
+          <svg class="icon" id="playIcon" viewBox="0 0 24 24"><path d="M9 6V18"/><path d="M15 6V18"/></svg>
+        </button>
+        <button aria-label="Next song">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 6.5L14.5 12L6 17.5Z"/><path d="M18 6V18"/></svg>
+        </button>
+        <button class="toggle off" id="repeat" aria-label="Repeat" aria-pressed="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 12V7.5H18.5"/><path d="M15.5 4.5L18.5 7.5L15.5 10.5"/><path d="M20 12V16.5H5.5"/><path d="M8.5 13.5L5.5 16.5L8.5 19.5"/></svg>
+        </button>
+      </div>
+
+      <p class="lyric">and the wind keeps the shape of where we stood</p>
+
+      <div class="progress" aria-label="1:49 of 5:00">
+        <div class="track"></div><div class="fill"></div><div class="head"></div>
+      </div>
+      <div class="times"><span>1:49</span><span>5:00</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Fit the 1440×900 screen into the window ── */
+const stage = document.getElementById('stage');
+function fit() {
+  const s = Math.min(innerWidth / 1440, innerHeight / 900);
+  stage.style.transform = `scale(${s}) translate(-50%, -50%)`;
+}
+addEventListener('resize', fit); fit();
+
+/* ── Play / pause, shuffle, repeat (prototype only: the song stays at 1:49) ── */
+const ui = document.getElementById('ui');
+const playBtn = document.getElementById('play');
+const playIcon = document.getElementById('playIcon');
+const PAUSE = '<path d="M9 6V18"/><path d="M15 6V18"/>';
+const PLAY  = '<path d="M8.5 5.5L18.5 12L8.5 18.5Z"/>';
+let playing = true;
+function setPlaying(p) {
+  playing = p;
+  playIcon.innerHTML = p ? PAUSE : PLAY;
+  playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+  ui.classList.toggle('paused', !p);
+}
+playBtn.addEventListener('click', () => setPlaying(!playing));
+addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); setPlaying(!playing); } });
+for (const id of ['shuffle', 'repeat']) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => {
+    const on = b.classList.toggle('off') === false;
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+
+/* ── Background: background v2 (sandstorm shader), with the sun moved up into the
+      illustration area of Layout 2.1. When the music is paused, the wind calms down. ── */
+const SAND_DENSITY = 0.55;
+const WIND_PLAYING = 1.95;
+const WIND_PAUSED  = 0.4;
+const GRAIN_AMOUNT = 0.05;
+
+const canvas = document.getElementById('sand');
+const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+
+const vertexSrc = `attribute vec2 pos; void main() { gl_Position = vec4(pos, 0.0, 1.0); }`;
+const fragmentSrc = `
+precision highp float;
+uniform float uTime;      // real time (sun breathing)
+uniform float uSandTime;  // wind time: runs faster or slower with the wind
+uniform float uDensity;
+uniform float uGrain;
+const vec2 RES = vec2(1440.0, 900.0);
+const vec2 SUN = vec2(720.0, 336.0);
+const float SUN_R = 304.0;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+  for (int i = 0; i < 5; i++) { v += a * noise(p); p = rot * p * 2.03; a *= 0.5; }
+  return v;
+}
+float sand(vec2 uv, float t, float drift, float evolve, float swirl) {
+  vec2 wind = vec2(t * drift, 0.0);
+  float e = t * evolve;
+  vec2 q = vec2(fbm(uv + wind + vec2(0.0, e)), fbm(uv + wind + vec2(5.2, 1.3) - vec2(e * 0.8, e)));
+  vec2 r = vec2(fbm(uv + swirl * q + vec2(1.7, 9.2) + vec2(e * 1.2, -e * 0.6)),
+                fbm(uv + swirl * q + vec2(8.3, 2.8) + vec2(-e, e * 1.1)));
+  return fbm(uv + swirl * r + wind);
+}
+
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, RES.y - gl_FragCoord.y);
+  float t = uSandTime;
+
+  // base gradient
+  vec2 a = vec2(380.0, 0.0), b = vec2(1060.0, 900.0);
+  float g = clamp(dot(p - a, b - a) / dot(b - a, b - a), 0.0, 1.0);
+  vec3 col = mix(vec3(207., 205., 194.) / 255., vec3(198., 187., 166.) / 255., smoothstep(0.00, 0.35, g));
+  col = mix(col, vec3(164., 128., 92.) / 255., smoothstep(0.35, 0.58, g));
+  col = mix(col, vec3(134., 96., 63.) / 255., smoothstep(0.58, 0.80, g));
+  col = mix(col, vec3(108., 69., 41.) / 255., smoothstep(0.80, 1.00, g));
+
+  // sun
+  float breathe = 1.0 + 0.018 * sin(uTime / 9.0 * 6.2832);
+  float glow = 0.9 + 0.1 * sin(uTime / 26.0 * 6.2832 + 1.0);
+  float d = length(p - SUN) / (SUN_R * breathe);
+  vec3 sunRim = vec3(232., 199., 155.) / 255.;
+  vec3 sunCol = mix(vec3(184., 116., 39.) / 255., sunRim, smoothstep(0.0, 1.0, pow(d, 0.85)));
+  col = mix(col, sunCol, (1.0 - smoothstep(0.55, 1.1, d)) * glow);
+  col = mix(col, sunRim, (1.0 - smoothstep(0.8, 1.6, d)) * 0.25 * glow);
+
+  // sand
+  vec2 uv = p / RES.y * vec2(0.55, 1.0);
+  float haze   = sand(uv * 1.3, t, 0.006, 0.030, 1.6);
+  float clouds = sand(uv * 2.4 + vec2(3.1, 7.7), t, 0.012, 0.050, 2.4);
+  float low = smoothstep(0.1, 1.0, p.y / RES.y);
+  float topLeft = 1.0 - smoothstep(0.0, 0.75, length(p / RES));
+  float dens = uDensity * (0.45 + 0.55 * low + 0.35 * topLeft) *
+               (0.55 * smoothstep(0.25, 0.8, haze) + 0.75 * smoothstep(0.35, 0.85, clouds));
+  float nearSun = 1.0 - smoothstep(0.9, 1.5, d);
+  dens = clamp(dens + uDensity * mix(0.06, 0.18, nearSun), 0.0, 0.92);
+  vec3 sandCol = mix(vec3(222., 199., 160.) / 255., vec3(170., 124., 78.) / 255.,
+                     clamp(0.35 * low + 0.6 * smoothstep(0.4, 0.9, clouds), 0.0, 1.0));
+  float bgLight = dot(col, vec3(0.299, 0.587, 0.114));
+  sandCol = mix(sandCol, vec3(196., 162., 118.) / 255., smoothstep(0.66, 0.80, bgLight) * 0.6);
+  col = mix(col, sandCol, dens);
+
+  // flying flecks, only inside sand
+  vec2 fp = floor(vec2(p.x + t * 30.0, p.y + 6.0 * sin(p.x * 0.004 + t * 0.3)) / 2.0);
+  col = mix(col, vec3(240., 225., 195.) / 255., step(0.9992, hash(fp)) * 0.3 * clamp(dens * 2.0, 0.0, 1.0));
+
+  // still grain
+  col += (hash(floor(p)) - 0.5) * uGrain * 2.0;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, vertexSrc));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fragmentSrc));
+gl.linkProgram(prog); gl.useProgram(prog);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+const posLoc = gl.getAttribLocation(prog, 'pos');
+gl.enableVertexAttribArray(posLoc);
+gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+const uTime = gl.getUniformLocation(prog, 'uTime');
+const uSandTime = gl.getUniformLocation(prog, 'uSandTime');
+gl.uniform1f(gl.getUniformLocation(prog, 'uDensity'), SAND_DENSITY);
+gl.uniform1f(gl.getUniformLocation(prog, 'uGrain'), GRAIN_AMOUNT);
+
+// Wind time is added up frame by frame, so changing the wind speed eases smoothly (no jumps)
+let sandTime = 40 * WIND_PLAYING, wind = WIND_PLAYING, last = null;
+function frame(ms) {
+  const dt = last === null ? 0 : Math.min((ms - last) / 1000, 0.1);
+  last = ms;
+  const target = playing ? WIND_PLAYING : WIND_PAUSED;
+  wind += (target - wind) * Math.min(dt * 0.8, 1);   // ease toward the target over a second or two
+  sandTime += dt * wind;
+  gl.uniform1f(uTime, 40 + ms / 1000);
+  gl.uniform1f(uSandTime, sandTime);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  frame(0);
+} else {
+  const loop = (ms) => { frame(ms); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
