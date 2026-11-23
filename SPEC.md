@@ -47,13 +47,19 @@ Like a Figma prototype for user testing, some steps are faked to save time and m
 5. **Next:** the big button disappears. A small **refresh icon** (circular arrow) sits
    in the **upper-right corner** of the photo — this is "upload again". The designer
    can copy the result to Figma (section 9) or tap the icon to get the next photo.
-6. **After the 4th photo:** a fun end state with a "start over" button (section 10).
+6. **Expand:** an **expand icon** in the upper-right corner of the design half opens
+   the design **full screen**, at the largest size the window allows (the half only
+   shows it at ~44%). A live design keeps playing while it grows. Back to the tool:
+   the design's own **collapse** or **back** button, or **Esc**. Designs without their
+   own collapse button get a small close button in the corner.
+7. **After the 4th photo:** a fun end state with a "start over" button (section 10).
 
 ## 5. Layout
 
 **Desktop (website):** two halves side by side, like MDS's Color Shift.
 - **Left half:** upload area → then the photo, full-bleed, with photographer credit.
-- **Right half:** the music app design, desktop size, scaled down to fit the half.
+- **Right half:** the music app design, desktop size, scaled down to fit the half
+  (and expandable to full screen, see section 4).
 - The tool's own interface stays **quiet and neutral, following MDS's approach**:
   minimal controls, small labels, all attention on the photo and the design.
 
@@ -99,20 +105,40 @@ very different corners of the mood map, roughly:
 | **Warm** | e.g. sunlit desert, sand tones | e.g. flowers, vivid market |
 | **Cool** | e.g. fog, misty water | e.g. neon city at night |
 
-### Design 1 · Warm and Calm (formerly "Dunes") — in progress
+### How we design each style
+**One screen at a time**: sketch in Figma ("Art Director" page), try it in code as
+a separate prototype page, tweak in Figma, bring the tweaks back to code. Once it
+feels right, it becomes that photo's design in the main flow.
+Every milestone gets a **version tag** in git (e.g. `warm-calm-proto-v3`), so the
+design's progress can be traced and any version reopened on GitHub (Tags).
 
-The first style we're perfecting. We work **one screen at a time**: sketch in
-Figma ("Art Director" page), then try it in code.
+### Design 1 · Warm and Calm (formerly "Dunes") — ✅ in the flow
 
-- **Layout:** controls sit at the bottom, the illustration takes most of the screen
-  — that's what reads as calm. Exploring **Layout 3.1** and **Layout 2.1** (open:
-  pick one).
+Live as the first photo's design: `warm-calm-prototype.html`, shown inside the tool
+(version `warm-calm-proto-v4`). Figma: "Warm and Calm · Prototype_iteration 1".
+
+- **Layout 2.1:** controls sit at the bottom, the illustration takes most of the
+  screen — that's what reads as calm. Artist block bottom left; controls, lyric and
+  progress centered over the rest of the bottom band.
+- **Type:** artist name in Cormorant Garamond **Regular, upright**, 64px (the hero);
+  lyrics in Cormorant Garamond Light Italic, 24px; song title and times in DM Mono
+  Light, 16px (song title uppercase, wide tracking).
+- **Colors:** cream text and icons (#F6EAD6) on a soft dusk shadow rising from the
+  bottom (keeps text readable over the sand, contrast AA 6.7:1). Hover: #B27733.
+- **Lines:** 2.5px everywhere — icons, pause ring (with a faint white fill), progress
+  line and playhead.
+- **Artist picture:** a tiny version of the sun (ochre center, sand edge, soft glow).
+- **Hover states:** icons turn #B27733, opacity unchanged. Control buttons change
+  instantly. Back and collapse get a **directional nudge** (0.25s ease-out): back
+  slides 4px left, collapse pinches to 88%.
+- **Moving song** (see section 7): pause calms the wind in the background.
 - **References** (folder `References_warm and calm`): grainy, blurry backgrounds,
   strong abstraction from reality, yellow/orange/ochre tones; plus the end of a
   Sahara sandstorm clip, where sand fills the whole frame.
-- **Background (current direction: `bg-warm-calm-v2.html`):** an ochre sun
+- **Background (from `bg-warm-calm-v2.html`):** an ochre sun
   (#B87427 center, fading gently to #E8C79B) inside a **slow, calm, billowing
-  sandstorm**.
+  sandstorm**. In the prototype the sun sits higher (608px wide) so it stays clear
+  of the controls.
   - Sand **churns in place** like smoke, with only a slow drift to the left — the
     frame itself never feels like it's moving (no dizziness).
   - Sand stays **calm**: the sun is veiled but always there.
@@ -122,8 +148,11 @@ Figma ("Art Director" page), then try it in code.
     sand density, wind speed, grain amount.
   - Earlier version kept for comparison: `bg-warm-calm-v1.html` (dust blobs +
     straight sideways sand streaks).
-- **Open:** typography, artist picture, final layout, how the background sits
-  behind the elements.
+- **Open:** a Figma-copyable version of the screen (Copy screen is hidden for live
+  designs, see section 9); removing the old unused Dunes screen code.
+
+### Design 2 · Cool and Calm (currently "Fog") — next
+Sketching in Figma.
 
 ### Style "recipes" (important for the iOS app later)
 Each style is written down as its own **recipe in a separate data file**: colors,
@@ -135,20 +164,30 @@ That way, everything we fine-tune now carries over.
 
 An **immersive "now playing" view**: a full screen you actively choose to open
 while a song plays, and can collapse again. Every style shows the **same moment**:
-one made-up song, paused in the middle of listening.
+one made-up song, opened in the middle of listening (at 1:49).
 
 **Every style has these elements (and nothing else):**
 1. **Artist picture** — what it looks like may vary per style (decided later).
 2. **Artist name — the hero.** Made-up artist: **Ameno Sol**.
 3. **Song title.** Made-up song: **Slow Horizon**. There is **no album name**.
 4. **Control buttons** — shuffle, previous, pause, next, repeat, from our own
-   thin-line icon set (24×24 grid, 1.25px stroke, flat line ends, open arrowheads).
-5. **Progress line** — frozen at **1:49 of 5:00** (about 36% filled).
+   thin-line icon set (24×24 grid, flat line ends, open arrowheads; drawn at 1.25px,
+   line weight can change per style — Warm and Calm uses 2.5px).
+5. **Progress line** — starts at **1:49 of 5:00** and **plays in real time**: bar,
+   playhead and time move. Pause stops it. At **5:00** the song stops and the button
+   shows play; pressing play then starts over from 0:00.
 6. **Illustration / background** — different per style, may be animated.
 7. **Back button** (upper-left corner) and **collapse button** (upper-right corner,
    two arrows pointing inward) — same thin-line style.
 
-**Exception:** lyrics may appear in Layout 2.1 only (an experiment for that layout).
+**Exception: lyrics** appear in Layout 2.1 (Warm and Calm) only.
+- One line at a time in a one-line window with softly faded edges.
+- A new line every **2 seconds**. The old line rises and fades out at the top while
+  the next one rises in from below (0.54s).
+- "Slow Horizon" has made-up lyrics (verse, pre-chorus, chorus, verse, bridge,
+  outro — 60 lines). Line 22, *"and the wind keeps the shape of where we stood"*,
+  starts exactly at 1:49. The lyrics loop when they run out.
+- When paused, the lyric dims.
 
 **Desktop first** (1440×900). **Mobile** comes later, as a phone-sized version of
 the same view built from the same recipe.
@@ -186,6 +225,10 @@ Both are copied as vector graphics (SVG), which Figma turns into layers on paste
 Fonts may need re-selecting in Figma if not installed.
 ⚠️ Riskiest technical part — test early.
 
+**Live designs** (interactive prototype pages, like Warm and Calm): Copy style guide
+works; **Copy screen is hidden for now** because the animated background is code,
+not layers. The editable version lives in the Figma file instead.
+
 On iOS later, these become a **share / save image** button.
 
 ## 10. End state
@@ -208,10 +251,17 @@ and a **"start over"** button. Draft options to pick from or rewrite:
 
 - **Plain website:** `index.html`, the style recipe file, and an images folder.
   No build step — preview by double-clicking `index.html`.
+- **Live designs:** a recipe can point to its own prototype page (`"live"` in the
+  recipe, e.g. `warm-calm-prototype.html`). The tool shows that page inside the
+  design frame; the page tells the tool when its collapse button is pressed.
+- **Animated backgrounds** run as shaders (small graphics-card programs, WebGL),
+  with tuning knobs at the top of the file.
+- **Grid:** 8px (saved in the project's `CLAUDE.md`).
 - **Fonts:** Google Fonts (free), deliberately unusual picks per style.
 - **Unsplash API key:** only used *while building*, to search and download the photos.
   Kept in a local `.env` file, never committed.
-- **Hosting:** public GitHub repo → Vercel, as usual.
+- **Hosting:** public GitHub repo → Vercel, as usual. Live at
+  https://art-director.vercel.app (the Vercel project is still named "art-director").
 
 ## 13. Build order
 
@@ -220,9 +270,8 @@ and a **"start over"** button. Draft options to pick from or rewrite:
 3. **Desktop music screen** — one neutral version to get the structure right.
 4. **Style recipes** — first pass at all 4 styles.
 5. **Font testing** — font playground, decide together.
-6. **Fine-tuning** — one screen at a time (starting with Warm and Calm): sketch
-   layouts in Figma, try backgrounds/details in code, iterate until it feels pushed
-   and right.
+6. **Fine-tuning** — one screen at a time (see "How we design each style"):
+   ✅ Warm and Calm · ⏳ Cool and Calm · Warm and Loud · Cool and Loud.
 7. **Figma copy** — test early (can be pulled forward), then polish.
 8. **Mobile** — stacked layout + phone music screen for each style.
 9. **Ship** — commit, push, deploy.
