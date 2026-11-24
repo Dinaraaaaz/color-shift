@@ -90,10 +90,10 @@ window.RECIPES = [
     "id": "warm-loud",
     "name": "Warm and Loud",
     "moodWords": [
-      "playful",
-      "bouncy",
       "loud",
-      "popping"
+      "popping",
+      "bold",
+      "playful"
     ],
     "photo": {
       "file": "images/inspiration/warm-loud.jpg",
