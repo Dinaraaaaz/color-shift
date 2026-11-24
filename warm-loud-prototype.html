@@ -100,9 +100,9 @@
 
   /* Layout 16: two lyric lines under the playing song */
   .lyric16 {
-    position: absolute; width: 400px; height: 48px; overflow: hidden;
+    position: absolute; width: 400px; height: 72px; overflow: hidden;
     transition: left .6s var(--pop), top .6s var(--pop), opacity .3s;
-    font: 400 20px/24px var(--display); letter-spacing: .02em;
+    font: 400 20px/36px var(--display); letter-spacing: .02em;   /* 36px lines: a 4px half step off the 8px grid, on purpose (1.5× the old 24) */
   }
   .lyric16 p { margin: 0; white-space: nowrap; }
   .lyric16 .w { opacity: .4; transition: opacity .12s; }
@@ -118,6 +118,17 @@
   .prev:hover { transform: translateX(-4px); }
   .next:hover { transform: translateX(4px); }
   .ctrl:active { transform: scale(.88); }
+
+  /* Shuffle and repeat: when on, a little lime blob pops in behind the icon */
+  .toggle { position: absolute; top: 528px; width: 72px; height: 72px; transition: transform .15s var(--pop); }
+  .toggle svg { width: 100%; height: 100%; overflow: visible; }
+  .toggle .icon { stroke-width: 2.1; }   /* same 4.2px line as previous/next */
+  .shuffle { left: 100px; }
+  .repeat { left: 644px; }
+  .toggle:hover { transform: rotate(-8deg); }
+  .toggle:active { transform: scale(.88); }
+  .toggle .on-blob { transform: scale(0); transform-origin: 12px 12px; transition: transform .35s var(--pop); }
+  .toggle[aria-pressed="true"] .on-blob { transform: scale(1); }
 
   .play { position: absolute; left: 312px; top: 464px; width: 192px; height: 192px; border-radius: 50%; }
   .play svg { width: 100%; height: 100%; overflow: visible; }
@@ -164,13 +175,31 @@
       <g class="arrow"><path class="icon" d="M10 0H-10M-3 -7L-10 0L-3 7"/></g></svg>
   </button>
 
-  <svg class="album" viewBox="-128 -116 256 240" aria-hidden="true"><g id="albumBlob"></g></svg>
+  <svg class="album" viewBox="-128 -116 256 240" aria-hidden="true">
+    <!-- Pink tint (tritone): black → near-black ink, greys → hot pink, white → light pink -->
+    <filter id="pinkTint" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.149 1 1"/>
+        <feFuncG type="table" tableValues="0 0.165 0.722"/>
+        <feFuncB type="table" tableValues="0.059 0.561 0.851"/>
+      </feComponentTransfer>
+    </filter>
+    <g id="albumBlob"></g></svg>
   <h1 class="album-name">Bubble Riot</h1>
   <p class="artist">Kiki Volta</p>
 
   <div id="tracks"></div>
   <div class="lyric16" id="lyric16" aria-live="polite"><div id="lyricInner"></div></div>
 
+  <button class="toggle shuffle" id="shuffle" aria-label="Shuffle" aria-pressed="false">
+    <svg viewBox="-6 -6 36 36"><g class="on-blob"><g id="shuffleBlob" transform="translate(12 12)"></g></g>
+      <path class="icon" d="M3 7H7.5L16.5 17H21M3 17H7.5L10.6 13.5M13.4 10.5L16.5 7H21M18 4L21 7L18 10M18 14L21 17L18 20"/></svg>
+  </button>
+  <button class="toggle repeat" id="repeat" aria-label="Repeat" aria-pressed="false">
+    <svg viewBox="-6 -6 36 36"><g class="on-blob"><g id="repeatBlob" transform="translate(12 12)"></g></g>
+      <path class="icon" d="M4 12V7.5H18.5M15.5 4.5L18.5 7.5L15.5 10.5M20 12V16.5H5.5M8.5 13.5L5.5 16.5L8.5 19.5"/></svg>
+  </button>
   <button class="ctrl prev" id="prev" aria-label="Previous song">
     <svg viewBox="0 0 24 24"><path class="icon" d="M17.5 6L8.5 12L17.5 18Z"/><path class="icon" d="M5.5 6V18"/></svg>
   </button>
@@ -314,7 +343,20 @@ const PINK = '#ffb8d9', LIME = '#d6ff2e';
 const playBlob  = makeBlob(document.getElementById('playBlob'),  { seed: 11, R: 70, fill: LIME, drop: 4, egg: 0.16 });
 const albumBlob = makeBlob(document.getElementById('albumBlob'), { seed: 7,  R: 100, fill: PINK, drop: 10 });
 const backBlob  = makeBlob(document.getElementById('backBlob'),  { seed: 3,  R: 26, fill: PINK, drop: 4 });
+// shuffle/repeat "on" blobs (drawn at 2px per unit, so edge 1.5 = 3px, drop 2 = 4px)
+const shuffleBlob = makeBlob(document.getElementById('shuffleBlob'), { seed: 23, R: 15, fill: LIME, edge: 1.5, drop: 2 });
+const repeatBlob  = makeBlob(document.getElementById('repeatBlob'),  { seed: 41, R: 15, fill: LIME, edge: 1.5, drop: 2 });
 playBlob.shape.rot = -Math.PI / 2; playBlob.shape.tilt = 0.12;
+// Album photo, tinted into our pinks and cut to the blob's shape (it wobbles with it).
+// Photo: "3d render" by Getty Images on Unsplash (jvtfa2QBJhk). Crop from Figma: zoomed ~1.5×, bottom-left of the photo.
+const albumClip = svgEl('clipPath', { id: 'albumClip' }, svgEl('defs', {}, albumBlob.g));
+const albumClipPath = svgEl('path', {}, albumClip);
+const albumImg = svgEl('image', {
+  href: 'images/covers/warm-loud-album.jpg', x: -108, y: -212, width: 312, height: 312,
+  preserveAspectRatio: 'xMidYMid slice', 'clip-path': 'url(#albumClip)', filter: 'url(#pinkTint)',
+});
+albumBlob.g.insertBefore(albumImg, albumBlob.body);   // between the shadow and the dark edge
+albumBlob.body.setAttribute('fill', 'none');
 
 /* ── The "speaker" spring: each beat pushes it, it bounces back ── */
 let sx = 0, sv = 0;
@@ -342,7 +384,7 @@ function placeCards() {
   cards.forEach((c, i) => {
     const d = Math.abs(i - cur);
     let y = T0 + i * 104;
-    if (l16 && i > cur) y += 56;                       // room for the two lyric lines
+    if (l16 && i > cur) y += 80;                       // room for the two lyric lines
     c.style.left = 808 + Math.min(d * 88, 176) + 'px'; // the playing song sticks out to the left
     c.style.top = y + 'px';
     c.classList.toggle('now', i === cur);
@@ -399,7 +441,7 @@ function showLine16(ci, jump) {
   if (li !== shownLine) {
     const words = LINE_CHUNKS[li].map((k) => `<span class="w" data-k="${k}">${CHUNKS[k].text}</span>`).join(' ');
     lyricInner.innerHTML = `<p>${words}</p><p class="next">${LINES[(li + 1) % LINES.length].replaceAll(' / ', ' ')}</p>`;
-    if (!jump && !REDUCED) lyricInner.animate([{ transform: 'translateY(24px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.34,1.4,.64,1)' });
+    if (!jump && !REDUCED) lyricInner.animate([{ transform: 'translateY(36px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.34,1.4,.64,1)' });
     shownLine = li;
   }
   lyricInner.querySelectorAll('.w').forEach((w) => w.classList.toggle('sung', +w.dataset.k <= ci));
@@ -430,9 +472,8 @@ const bubbles = [];
 let emitted = 0;
 function emit(now) {
   const k = KINDS[emitted % KINDS.length], lane = LANES[emitted % LANES.length];
-  const pink = k.c === PINK;
   const wrap = svgEl('g', {}, bubblesEl);
-  const blob = makeBlob(wrap, { seed: 101 + emitted * 37, R: k.R, fill: k.c, edge: pink ? 3 : 2, drop: pink ? 6 : 0 });
+  const blob = makeBlob(wrap, { seed: 101 + emitted * 37, R: k.R, fill: k.c, edge: 3, drop: 6 });   // same edge + shadow for every color
   bubbles.push({
     ...k, wrap, blob, state: 'fly', t0: now,
     tx: ORIGIN[0] + lane, ty: ORIGIN[1] - 144 - (emitted % 3) * 24,
@@ -558,6 +599,10 @@ function setTrack(i) {
 playBtn.addEventListener('click', togglePlay);
 document.getElementById('prev').addEventListener('click', () => (position > 3 ? (position = 0, resync()) : setTrack(cur - 1)));
 document.getElementById('next').addEventListener('click', () => setTrack(cur + 1 < TRACKS.length ? cur + 1 : 0));
+for (const id of ['shuffle', 'repeat']) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')));
+}
 addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   if (e.key === 'Escape') askToCollapse();
@@ -615,7 +660,10 @@ function tick(now) {
   drawBlob(playBlob, t, wob);
   albumBlob.g.setAttribute('transform', `scale(${(1 + 0.02 * sx).toFixed(3)})`);
   drawBlob(albumBlob, t * 0.6, wob);
+  albumClipPath.setAttribute('d', albumBlob.body.getAttribute('d'));
   drawBlob(backBlob, t * 0.8, wob * 0.6);
+  drawBlob(shuffleBlob, t * 0.9, wob * 0.6);
+  drawBlob(repeatBlob, t * 0.9 + 2, wob * 0.6);
   // the big word squashes a little with the beat, staying readable
   wordBounce.style.transform = `translateY(${(3 * sx).toFixed(2)}px) scale(${(1 + 0.02 * sx).toFixed(4)}, ${(1 - 0.05 * sx).toFixed(4)})`;
   drawBubbles(now, t, wob, dt);
