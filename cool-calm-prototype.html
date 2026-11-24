@@ -62,11 +62,10 @@
     width: 840px; height: 832px;    /* 840 = up to 64px before the tiles; 832 = same height as the tiles */
   }
 
-  .top { display: flex; justify-content: space-between; height: 48px; }
+  .top { display: flex; height: 48px; }
   .top button { width: 48px; height: 48px; display: grid; place-items: center; color: var(--white); }
   .top .icon { width: 32px; height: 32px; transition: transform 0.25s cubic-bezier(.2, .8, .2, 1); }
   .top .back:hover .icon, .top .back:focus-visible .icon { transform: translateX(-4px); }
-  .top .collapse:hover .icon, .top .collapse:focus-visible .icon { transform: scale(0.88); }
 
   .tags { margin-top: var(--space-4); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
   .tag {
@@ -129,14 +128,20 @@
   .tile .icon { width: 80px; height: 80px; }
   /* Hover: the fog thickens and the icon goes dark. Instant, like Warm and Calm. */
   .tile:hover, .tile:focus-visible { --fog-bottom: 0.92; --fog-middle: 0.8; --fog-top: 0.66; color: var(--c3); }
-  .tile.toggle.off .icon { opacity: 0.45; }
-  .tile.toggle.off:hover .icon { opacity: 0.8; }
+  /* Shuffle / repeat: the icon always looks the same (it used to be faded when off,
+     which made its lines look thinner). When on, a short line appears under it. */
+  .tile.toggle { position: relative; }
+  .tile.toggle::after {
+    content: ''; position: absolute; left: 50%; bottom: var(--space-4);
+    width: 24px; height: 2px; margin-left: -12px; background: currentColor;
+  }
+  .tile.toggle.off::after { display: none; }
 
   .prev { grid-area: prev; } .next { grid-area: next; }
   .shuffle { grid-area: shuffle; } .repeat { grid-area: repeat; }
   .play { grid-area: play; color: var(--c3); }
-  .play .icon { width: 200px; height: 200px; }
-  .play .icon path { stroke-width: 6px; }
+  .play .icon { width: 400px; height: 400px; }   /* v3: twice as big, fills more of the tile */
+  .play .icon path { stroke-width: 8px; }
   .play:hover { color: var(--c2); }
 </style>
 </head>
@@ -162,9 +167,6 @@
     <div class="top">
       <button class="back" aria-label="Back">
         <svg class="icon" viewBox="0 0 24 24"><path d="M20 12H4.5"/><path d="M10.5 6L4.5 12L10.5 18"/></svg>
-      </button>
-      <button class="collapse" aria-label="Collapse">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M20 4L14 10"/><path d="M14 5V10H19"/><path d="M4 20L10 14"/><path d="M5 14H10V19"/></svg>
       </button>
     </div>
 
@@ -207,8 +209,10 @@ const BAR_WIDTH    = 2;     // px
 const SWELL        = 64;    // how much the bars rise around "now" (px)
 const SWELL_WIDTH  = 56;    // how far that rise spreads to each side (px)
 const PULSE        = 0.35;  // how much the bars move with the music (0 = still, 1 = wild)
-const PLAYED_ALPHA = 0.35;  // played bars fade into the fog
-const AHEAD_ALPHA  = 0.8;   // bars still to come
+const AHEAD  = [255, 255, 255, 0.8];   // bars still to come: soft white
+const PLAYED = [49, 112, 130, 1];      // played bars: Color 2
+// Progress is shown by color only: each bar slowly turns from white to Color 2
+// while the song passes it (25 bars over 5:00 = about 12 seconds per bar).
 
 /* ── Fit the 1440×900 screen into the window ── */
 const stage = document.getElementById('stage');
@@ -315,12 +319,12 @@ function drawWave(t) {
     const live = rest[i] * (1 + PULSE * wobble) + swell * (0.85 + 0.15 * Math.sin(t * 0.009 + i));
     const quiet = 16;
     const h = quiet + (live - quiet) * energy;
-    ctx.fillStyle = `rgba(255,255,255,${d < 0 ? PLAYED_ALPHA : AHEAD_ALPHA})`;
+    // how far the song has passed this bar: 0 = not yet, 1 = fully played
+    const f = Math.max(0, Math.min(1, (px - (x - BAR_GAP / 2)) / BAR_GAP));
+    const c = AHEAD.map((a, k) => a + (PLAYED[k] - a) * f);
+    ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
     ctx.fillRect(x, (H - h) / 2, BAR_WIDTH, h);
   }
-  // "now": one bright line through the full height
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(Math.round(px), 0, BAR_WIDTH, H);
 }
 
 function render(jump) {
@@ -384,7 +388,6 @@ for (const id of ['shuffle', 'repeat']) {
 /* ── Inside Color Shift: back, collapse and Esc close the full-screen view ── */
 function askToCollapse() { if (window.parent !== window) window.parent.postMessage({ colorShift: 'collapse' }, '*'); }
 document.querySelector('.top .back').addEventListener('click', askToCollapse);
-document.querySelector('.top .collapse').addEventListener('click', askToCollapse);
 addEventListener('keydown', (e) => { if (e.key === 'Escape') askToCollapse(); });
 
 render(true);

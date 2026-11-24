@@ -48,7 +48,7 @@ window.RECIPES = [
   },
   {
     "id": "cool-calm",
-    "name": "Fog",
+    "name": "Cool and Calm",
     "moodWords": [
       "mystical",
       "cold",
@@ -65,24 +65,25 @@ window.RECIPES = [
     },
     "style": {
       "layout": "fog",
+      "live": "cool-calm-prototype.html",
       "colors": {
-        "bg": "#0c181a",
-        "surface": "#16272a",
-        "text": "#d3e0de",
-        "muted": "#8aa3a0",
-        "accent": "#9fc9c3",
-        "glow": "#efd9a6"
+        "bg": "#183740",
+        "surface": "#317082",
+        "text": "#ffffff",
+        "muted": "#95b6bf",
+        "accent": "#95b6bf",
+        "glow": "#95b6bf"
       },
       "fonts": {
-        "display": "IM Fell English",
-        "displayStyle": "400 italic",
-        "body": "IBM Plex Mono",
-        "bodyStyle": "300"
+        "display": "Helvetica Neue",
+        "displayStyle": "500 uppercase (artist), 600 (sung lyric line)",
+        "body": "Helvetica Neue",
+        "bodyStyle": "300 (lyrics), 400 (song title, times)"
       },
-      "radius": "28px soft glass",
-      "texture": "frosted glass",
-      "imagery": "related photos, desaturated and dissolving into the background",
-      "idea": "Everything is half-hidden. Covers dissolve into the dark, the player sits on frosted glass, navigation whispers along the edge. One warm window-light dot is the only color. (Background direction still open.)"
+      "radius": "none: square tiles, sharp thin line icons",
+      "texture": "frosted glass tiles with fog settling inside, over a grainy photo",
+      "imagery": "the artist portrait as the full background, tinted with the three colors (tritone)",
+      "idea": "The artist's face is the fog. Frosted glass tiles hold the controls, a sound line pulses with the music and slowly turns deep blue-teal as the song plays, and four lines of lyrics drift up with the sung line in bold."
     }
   },
   {

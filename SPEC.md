@@ -151,10 +151,17 @@ Live as the first photo's design: `warm-calm-prototype.html`, shown inside the t
 - **Open:** a Figma-copyable version of the screen (Copy screen is hidden for live
   designs, see section 9); removing the old unused Dunes screen code.
 
-### Design 2 · Cool and Calm (currently "Fog") — in progress
+### Design 2 · Cool and Calm (formerly "Fog") — ✅ in the flow
 
-First prototype: `cool-calm-prototype.html` (version `cool-calm-proto-v1`), built from
-Figma "Layout_fog_iterated_2".
+Live as the second photo's design: `cool-calm-prototype.html`, shown inside the tool
+(version `cool-calm-proto-v3`), built from Figma "Layout_fog_iterated_2".
+
+- **v2 → v3 tweaks:** tiles are frosted glass with a light Color 1 fog gradient (thicker
+  at the bottom), no edge line; no collapse button (back only); shuffle/repeat look the
+  same as the other icons, with a short line under them when on; the pause icon is 2×
+  (400px, 8px lines).
+- **Progress by color only:** no moving line. Each bar of the sound line slowly turns
+  from soft white to Color 2 as the song passes it.
 
 - **Colors (my own, Figma Color 1–3):** #95B6BF (mist), #317082 (deep blue-teal),
   #183740 (night). Monochrome.
