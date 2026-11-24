@@ -95,14 +95,14 @@
   .ctrl { position: absolute; width: 72px; height: 72px; transition: transform .15s var(--pop); }
   .ctrl svg { width: 100%; height: 100%; overflow: visible; }
   .ctrl .icon { stroke-width: 1.4; }
-  .prev { left: 216px; top: 528px; }
-  .next { left: 528px; top: 528px; }
+  .prev { left: 216px; top: 488px; }
+  .next { left: 528px; top: 488px; }
   .prev:hover { transform: translateX(-4px); }
   .next:hover { transform: translateX(4px); }
   .ctrl:active { transform: scale(.88); }
 
   /* Shuffle and repeat: when on, a little lime blob pops in behind the icon */
-  .toggle { position: absolute; top: 528px; width: 72px; height: 72px; transition: transform .15s var(--pop); }
+  .toggle { position: absolute; top: 488px; width: 72px; height: 72px; transition: transform .15s var(--pop); }
   .toggle svg { width: 100%; height: 100%; overflow: visible; }
   .toggle .icon { stroke-width: 2.1; }   /* same 4.2px line as previous/next */
   .shuffle { left: 100px; }
@@ -112,17 +112,17 @@
   .toggle .on-blob { transform: scale(0); transform-origin: 12px 12px; transition: transform .35s var(--pop); }
   .toggle[aria-pressed="true"] .on-blob { transform: scale(1); }
 
-  .play { position: absolute; left: 312px; top: 464px; width: 192px; height: 192px; border-radius: 50%; }
+  .play { position: absolute; left: 312px; top: 424px; width: 192px; height: 192px; border-radius: 50%; }
   .play svg { width: 100%; height: 100%; overflow: visible; }
   .play .hover { transition: transform .2s var(--pop); transform-origin: 0 0; }
   .play:hover .hover { transform: scale(1.06); }
   .play:active .hover { transform: scale(.94); }
   .play .icon { stroke-width: 6; }
 
-  .seek { position: absolute; left: 64px; top: 656px; width: 696px; height: 40px; cursor: pointer; touch-action: none; }
+  .seek { position: absolute; left: 64px; top: 616px; width: 696px; height: 40px; cursor: pointer; touch-action: none; }
   .seek .track-line { position: absolute; left: 0; right: 0; top: 16px; height: 12px; border-radius: 999px; background: var(--surface); overflow: hidden; }
   .seek .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); border-radius: 999px; }
-  .times { position: absolute; left: 64px; top: 696px; width: 696px; display: flex; justify-content: space-between; font: 400 24px/32px var(--display); }
+  .times { position: absolute; left: 64px; top: 656px; width: 696px; display: flex; justify-content: space-between; font: 400 24px/32px var(--display); }
 
   .back { position: absolute; left: 32px; top: 32px; width: 64px; height: 64px; z-index: 2; }
   .back svg { width: 100%; height: 100%; overflow: visible; }
@@ -382,7 +382,7 @@ function updateLyrics(b, jump) {
    One bubble per beat shoots out of the button, then floats up
    (pushed a little on every beat) and pops when it hits the top of the frame. */
 const bubblesEl = document.getElementById('bubbles');
-const ORIGIN = [408, 528];
+const ORIGIN = [408, 488];   // just above the play button (its center is at y 520, level with the playing song)
 // sizes and colors repeat in this order (from the Figma layout)
 const KINDS = [
   { R: 64, c: LIME }, { R: 26, c: LIME }, { R: 50, c: PINK }, { R: 24, c: LIME },
