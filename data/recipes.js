@@ -88,12 +88,12 @@ window.RECIPES = [
   },
   {
     "id": "warm-loud",
-    "name": "Petal",
+    "name": "Warm and Loud",
     "moodWords": [
+      "playful",
+      "bouncy",
       "loud",
-      "popping",
-      "bold",
-      "unapologetic"
+      "popping"
     ],
     "photo": {
       "file": "images/inspiration/warm-loud.jpg",
@@ -105,6 +105,7 @@ window.RECIPES = [
     },
     "style": {
       "layout": "petal",
+      "live": "warm-loud-prototype.html",
       "colors": {
         "bg": "#ff2a8f",
         "surface": "#ffb8d9",
@@ -119,10 +120,10 @@ window.RECIPES = [
         "body": "Bricolage Grotesque",
         "bodyStyle": "700"
       },
-      "radius": "999px pills and organic blobs",
-      "texture": "hard offset shadows, thick ink outlines",
-      "imagery": "none: blobs, stickers, flat color",
-      "idea": "A poster, not an app. The title is too big to fit, covers are blobs, buttons have hard shadows. The tiny green from the photo becomes an acid accent."
+      "radius": "16px song cards, lumpy hand-made blobs, round line ends",
+      "texture": "thick dark edges and hard offset shadows on everything",
+      "imagery": "blobs popping out of the play button; the album cover is a 3D render tinted into the pinks, cut to a blob",
+      "idea": "Playing a whole album. The play button bounces like a speaker on every beat and blows bubbles that float up and pop at the top. The playing song sticks out in acid lime, lyrics light up word by word."
     }
   },
   {

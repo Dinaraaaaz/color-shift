@@ -172,11 +172,49 @@ Live as the second photo's design: `cool-calm-prototype.html`, shown inside the 
   tiles on the right (previous/next, a big pause tile, shuffle/repeat); lyrics bottom left.
 - **Lyrics:** 4 lines visible, the sung line is always the 2nd one, in bold; the block
   moves up one line at a time.
-- **Sound line:** thin bars that pulse with the music *and* show progress: a bright "now"
-  line moves through it, bars swell around it, played bars fade into the fog. Click or
-  drag to jump. Pause makes the line go quiet.
+- **Sound line:** thin bars that pulse with the music and show progress by color (see
+  v3 tweaks above). Click or drag to jump. Pause makes the line go quiet.
 - **Type:** Helvetica Neue (Arial on Windows). Icons: thin, sharp lines.
 - Made-up song: "Where the Fog Keeps You" by Ilse Varden.
+
+### Design 3 · Warm and Loud (formerly "Petal") — ✅ in the flow
+
+Live as the third photo's design: `warm-loud-prototype.html`, shown inside the tool
+(version `warm-loud-proto-v5`), built from Figma "Layout 16". Figma copy of v3:
+section "Warm and Loud prototype v3" on the Art Director page.
+
+- **Idea:** we're playing a **whole album**. Album cover top right, album name and
+  artist next to it; the 5 songs in a zig-zag column, the playing one sticks out to the
+  left in lime. Click a song (or previous/next) to play it.
+- **Colors (from the first version):** #FF2A8F hot pink background, #FFB8D9 light pink
+  cards and blobs, #26000F near-black ink, #D6FF2E acid lime for the playing song, the
+  play button and "on" states.
+- **Type:** Anton (album name, numbers, times, lyrics) + Bricolage Grotesque (song
+  titles, artist).
+- **Shapes:** lumpy, skewed hand-made blobs (drawn in code, they wobble gently). Every
+  blob, card and button has a **3px dark edge and a hard offset shadow**, whatever its color.
+- **The beat:** one clock for everything, **90 BPM**. On each beat the play blob
+  **squashes like a speaker cone** and springs back (every 4th beat hits harder).
+  Pause stops the beat and calms everything.
+- **Bubbles:** one bubble per beat shoots out of the play button on a curved path, floats
+  up (a little push on every beat, small ones rise faster, gentle sway), and **pops when
+  it touches the top of the frame** (a ring + flying drops). Reference: the video in
+  `References_playful`, used as inspiration only.
+- **Lyrics:** two lines under the playing song (36px apart: a deliberate 4px half step);
+  words light up as they're sung, the next line waits faded below.
+- **Shuffle and repeat:** same rounded icons as previous/next; when on, a small lime blob
+  pops in behind the icon.
+- **Album cover:** "3d render" by Getty Images on Unsplash, cropped as in Figma and
+  **tinted into the three pinks** (dark → ink, mid → hot pink, light → light pink), cut to
+  the blob shape. Saved as `images/covers/warm-loud-album.jpg`.
+- **Icons:** previous/next/shuffle/repeat/back redrawn with round line ends (first step
+  toward the rounded icon set).
+- Made-up album: **"Bubble Riot" by Kiki Volta**. Songs: Pink Alarm, Gum on My Shoe,
+  **Gold to Dust** (playing, 1:49 of 5:00), Fizz, Loud Little Heart.
+- **Tried and kept in git (`warm-loud-proto-v1`–`v4`):** Layout 15, one huge lyric word at
+  a time above the controls (Anton 176px, "slot machine" change: old word out, then new
+  word in). We chose Layout 16.
+- **Open:** a proper rounded icon set; Figma copy of the final screen.
 
 ### Style "recipes" (important for the iOS app later)
 Each style is written down as its own **recipe in a separate data file**: colors,
@@ -204,7 +242,7 @@ one made-up song, opened in the middle of listening (at 1:49).
 7. **Back button** (upper-left corner) and **collapse button** (upper-right corner,
    two arrows pointing inward) — same thin-line style.
 
-**Exception: lyrics** appear in Layout 2.1 (Warm and Calm) only.
+**Lyrics** appear in Warm and Calm, Cool and Calm and Warm and Loud, each in its own way (see each design). The rules below are Warm and Calm's.
 - One line at a time in a one-line window with softly faded edges.
 - A new line every **2 seconds**. The old line rises and fades out at the top while
   the next one rises in from below (0.54s).
@@ -295,7 +333,7 @@ and a **"start over"** button. Draft options to pick from or rewrite:
 4. **Style recipes** — first pass at all 4 styles.
 5. **Font testing** — font playground, decide together.
 6. **Fine-tuning** — one screen at a time (see "How we design each style"):
-   ✅ Warm and Calm · ⏳ Cool and Calm · Warm and Loud · Cool and Loud.
+   ✅ Warm and Calm · ✅ Cool and Calm · ✅ Warm and Loud · Cool and Loud.
 7. **Figma copy** — test early (can be pulled forward), then polish.
 8. **Mobile** — stacked layout + phone music screen for each style.
 9. **Ship** — commit, push, deploy.

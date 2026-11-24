@@ -50,26 +50,8 @@
 
   .icon { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
 
-  /* ── Layout 15: one huge word at a time ── */
-  /* The word sits in a "window" above the controls (stage y 48–472, x 64–808).
-     Words slide up into it from below and out of it at the top, like a slot machine. */
-  .words {
-    position: absolute; left: 64px; top: 48px; width: 744px; height: 424px;
-    overflow: hidden; pointer-events: none;
-    transition: opacity .3s;
-  }
-  .words .bounce { position: absolute; inset: 0; transform-origin: 0 400px; }   /* 400 = the baseline */
-  .word {
-    position: absolute; left: 0;
-    font-family: var(--display); line-height: 1; white-space: pre;
-    text-transform: uppercase; color: var(--ink);
-  }
-
-  /* ── Layout 16: blobs popping out of the play button ── */
-  .bubbles { position: absolute; inset: 0; pointer-events: none; overflow: visible; transition: opacity .3s; }
-
-  .stage.l15 .bubbles, .stage.l15 .lyric16 { opacity: 0; }
-  .stage.l16 .words { opacity: 0; }
+  /* ── Bubbles popping out of the play button ── */
+  .bubbles { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
 
   /* ── Album: blob cover, name, artist ── */
   .album { position: absolute; left: 944px; top: 24px; width: 256px; height: 240px; overflow: visible; }
@@ -98,7 +80,7 @@
   .track .t { display: block; font: 700 20px/24px var(--body); }
   .track .len { display: block; font: 400 16px/24px var(--body); }
 
-  /* Layout 16: two lyric lines under the playing song */
+  /* Two lyric lines under the playing song */
   .lyric16 {
     position: absolute; width: 400px; height: 72px; overflow: hidden;
     transition: left .6s var(--pop), top .6s var(--pop), opacity .3s;
@@ -147,27 +129,12 @@
   .back .icon { stroke-width: 3; }
   .back .arrow { transition: transform .25s ease-out; }
   .back:hover .arrow { transform: translateX(-4px); }
-
-  /* ── Test switches (for us, not testers) ── */
-  .panel {
-    position: fixed; right: 16px; bottom: 16px; z-index: 10;
-    display: flex; align-items: center; gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
-    background: var(--ink); color: var(--surface);
-    border-radius: 999px;
-    font: 700 14px/24px var(--body);
-  }
-  .panel span { opacity: .6; margin-left: var(--space-1); }
-  .panel button { padding: 0 var(--space-1); border-radius: 999px; }
-  .panel button[aria-pressed="true"] { background: var(--lime); color: var(--ink); }
-  .panel[hidden] { display: none; }
 </style>
 </head>
 <body>
 
-<div class="stage l15" id="stage">
+<div class="stage" id="stage">
 
-  <div class="words" aria-hidden="true"><div class="bounce" id="wordBounce"></div></div>
   <svg class="bubbles" id="bubbles" viewBox="0 0 1440 900" width="1440" height="900" aria-hidden="true"></svg>
 
   <button class="back" id="back" aria-label="Back">
@@ -216,11 +183,6 @@
   <div class="times"><span id="now">01:49</span><span id="total">05:00</span></div>
 </div>
 
-<div class="panel" id="panel">
-  <span>Layout</span>
-  <button data-layout="15">15</button><button data-layout="16">16</button>
-</div>
-
 <script>
 /* ── Fit the 1440×900 screen into the window ── */
 const stage = document.getElementById('stage');
@@ -251,11 +213,11 @@ const TRACKS = [
 
 /* ── THE BEAT: one clock that everything moves to ──
    90 beats per minute = a "thump" every 0.67 seconds.
-   Change BPM and everything follows: words, bounce, bubbles. */
+   Change BPM and everything follows: lyrics, bounce, bubbles. */
 const BPM = 90, BPS = BPM / 60, BEAT_MS = 1000 / BPS;
 
 /* ── Lyrics of "Gold to Dust" (made up).
-   "/" splits a line into the pieces shown one beat each in Layout 15.
+   "/" splits a line into pieces that light up one beat each.
    The last piece of every line is held for an extra beat. */
 const LINES = [
   'The sky / turned / gold, / then it / turned / to dust,',
@@ -377,14 +339,14 @@ const cards = TRACKS.map((t, i) => {
   tracksEl.appendChild(b);
   return b;
 });
-let cur = 2, layout = 15;
+let cur = 2;
 const lyric16 = document.getElementById('lyric16');
 function placeCards() {
-  const l16 = layout === 16, T0 = l16 ? 272 : 304;
+  const T0 = 272;
   cards.forEach((c, i) => {
     const d = Math.abs(i - cur);
     let y = T0 + i * 104;
-    if (l16 && i > cur) y += 80;                       // room for the two lyric lines
+    if (i > cur) y += 80;                              // room for the two lyric lines
     c.style.left = 808 + Math.min(d * 88, 176) + 'px'; // the playing song sticks out to the left
     c.style.top = y + 'px';
     c.classList.toggle('now', i === cur);
@@ -394,46 +356,7 @@ function placeCards() {
   lyric16.style.top = T0 + cur * 104 + 96 + 'px';
 }
 
-/* ── Layout 15: the big word ── */
-const wordBounce = document.getElementById('wordBounce');
-// Inside the word window: baseline at 400 (= stage y 448, about 40px above the play button)
-const WIN_H = 424, BASE = 400, MAX_W = 696;
-const WORD_SIZE = 176;   // px; letters ~150px tall. The widest word, CRACKLE, is ~560px wide
-const mctx = document.createElement('canvas').getContext('2d');
-function wordText(t) { return t.replace(/[,.]/g, '').toUpperCase(); }
-function makeWord(text) {
-  mctx.font = '100px Anton';
-  const m = mctx.measureText(text);
-  const capAsc = m.actualBoundingBoxAscent || 74;
-  // one size for every word (only shrinks if a future lyric is too wide for the column)
-  const fs = Math.min(WORD_SIZE, (MAX_W * 100) / m.width);
-  const asc = m.fontBoundingBoxAscent || 117, desc = m.fontBoundingBoxDescent || 33;
-  const el = document.createElement('div');
-  el.className = 'word';
-  el.style.fontSize = fs + 'px';
-  el.style.top = BASE - (fs / 2 + ((asc - desc) / 2) * (fs / 100)) + 'px';   // sit on the baseline
-  el.textContent = text;
-  return { el, cap: (capAsc * fs) / 100 };
-}
-function showWord(ci, jump) {
-  const olds = [...wordBounce.children];
-  const { el, cap } = makeWord(wordText(CHUNKS[ci].text));
-  wordBounce.appendChild(el);
-  if (jump || REDUCED) { olds.forEach((o) => o.remove()); return; }
-  // Slot, one word at a time: first the old word shoots up and out of the top…
-  const OUT = BEAT_MS * 0.3, IN = BEAT_MS * 0.55;   // together 85% of a beat
-  olds.forEach((o) => {
-    o.getAnimations().forEach((a) => a.cancel());
-    o.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-(BASE + 16)}px)` }], { duration: OUT, easing: 'cubic-bezier(.55,0,.75,.2)', fill: 'forwards' })
-      .finished.then(() => o.remove(), () => o.remove());
-  });
-  // …then, once it's gone, the new word shoots up from below the window (hidden until it starts)
-  const below = WIN_H - BASE + cap + 8;
-  el.animate([{ transform: `translateY(${below}px)` }, { transform: 'translateY(0)' }],
-    { duration: IN, delay: olds.length ? OUT : 0, easing: 'cubic-bezier(.34,1.4,.64,1)', fill: 'backwards' });
-}
-
-/* ── Layout 16: two small lyric lines, words light up as they're sung ── */
+/* ── Two small lyric lines under the playing song, words light up as they're sung ── */
 const lyricInner = document.getElementById('lyricInner');
 let shownLine = -1;
 function showLine16(ci, jump) {
@@ -451,12 +374,11 @@ let shownChunk = -1;
 function updateLyrics(b, jump) {
   const ci = chunkAt(b);
   if (ci === shownChunk && !jump) return;
-  showWord(ci, jump);
   showLine16(ci, jump);
   shownChunk = ci;
 }
 
-/* ── Layout 16: bubbles that pop out of the play button ──
+/* ── Bubbles that pop out of the play button ──
    One bubble per beat shoots out of the button, then floats up
    (pushed a little on every beat) and pops when it hits the top of the frame. */
 const bubblesEl = document.getElementById('bubbles');
@@ -620,25 +542,6 @@ seekEl.addEventListener('pointermove', (e) => { if (seekEl.hasPointerCapture(e.p
 function askToCollapse() { if (window.parent !== window) window.parent.postMessage({ colorShift: 'collapse' }, '*'); }
 document.getElementById('back').addEventListener('click', askToCollapse);
 
-/* ── Test switches ── */
-const panel = document.getElementById('panel');
-if (window.parent !== window) panel.hidden = true;
-function store(k, v) { try { localStorage.setItem('warmLoud.' + k, v); } catch (_) {} }
-function recall(k) { try { return localStorage.getItem('warmLoud.' + k); } catch (_) { return null; } }
-function setLayout(l) {
-  layout = l;
-  stage.classList.toggle('l15', l === 15);
-  stage.classList.toggle('l16', l === 16);
-  placeCards();
-  store('layout', l);
-  panel.querySelectorAll('[data-layout]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.layout === l)));
-}
-panel.addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (b && b.dataset.layout) setLayout(+b.dataset.layout);
-});
-setLayout(+(recall('layout') || 15));
-
 /* ── Every frame ── */
 let last = null;
 function tick(now) {
@@ -664,13 +567,11 @@ function tick(now) {
   drawBlob(backBlob, t * 0.8, wob * 0.6);
   drawBlob(shuffleBlob, t * 0.9, wob * 0.6);
   drawBlob(repeatBlob, t * 0.9 + 2, wob * 0.6);
-  // the big word squashes a little with the beat, staying readable
-  wordBounce.style.transform = `translateY(${(3 * sx).toFixed(2)}px) scale(${(1 + 0.02 * sx).toFixed(4)}, ${(1 - 0.05 * sx).toFixed(4)})`;
   drawBubbles(now, t, wob, dt);
   requestAnimationFrame(tick);
 }
 
-/* Wait for the fonts so the big word is measured with Anton */
+/* Wait for the fonts before starting, so nothing jumps when they load */
 setPlaying(true);
 placeCards();
 Promise.race([
