@@ -415,31 +415,35 @@ function updateLyrics(b, jump) {
 }
 
 /* ── Layout 16: bubbles that pop out of the play button ──
-   A 32-beat cycle (16 seconds): 8 beats blowing one bubble each,
-   12 beats bouncing together, 8 beats popping one each, 4 beats empty. */
+   One bubble per beat shoots out of the button, then floats up
+   (pushed a little on every beat) and pops when it hits the top of the frame. */
 const bubblesEl = document.getElementById('bubbles');
 const ORIGIN = [408, 528];
-const NEST = [
-  { x: 552, y: 160, R: 64, c: LIME },
-  { x: 360, y: 160, R: 50, c: PINK },
-  { x: 208, y: 312, R: 64, c: PINK },
-  { x: 224, y: 184, R: 26, c: LIME },
-  { x: 384, y: 288, R: 42, c: LIME },
-  { x: 528, y: 304, R: 32, c: PINK },
-  { x: 376, y: 408, R: 26, c: LIME },
-  { x: 520, y: 408, R: 24, c: LIME },
+// sizes and colors repeat in this order (from the Figma layout)
+const KINDS = [
+  { R: 64, c: LIME }, { R: 26, c: LIME }, { R: 50, c: PINK }, { R: 24, c: LIME },
+  { R: 64, c: PINK }, { R: 42, c: LIME }, { R: 32, c: PINK }, { R: 26, c: LIME },
 ];
-const bubbles = NEST.map((n, i) => {
-  const wrap = svgEl('g', { opacity: 0 }, bubblesEl);
-  const pink = n.c === PINK;
-  const blob = makeBlob(wrap, { seed: 101 + i * 37, R: n.R, fill: n.c, edge: pink ? 3 : 2, drop: pink ? 6 : 0 });
-  return { ...n, wrap, blob, state: 'none', t0: 0, side: i % 2 ? 1 : -1 };
-});
+// where each bubble is released, left/right of the button, so they spread out
+const LANES = [-200, 120, -80, 200, -160, 40, 160, -24];
+const bubbles = [];
+let emitted = 0;
+function emit(now) {
+  const k = KINDS[emitted % KINDS.length], lane = LANES[emitted % LANES.length];
+  const pink = k.c === PINK;
+  const wrap = svgEl('g', {}, bubblesEl);
+  const blob = makeBlob(wrap, { seed: 101 + emitted * 37, R: k.R, fill: k.c, edge: pink ? 3 : 2, drop: pink ? 6 : 0 });
+  bubbles.push({
+    ...k, wrap, blob, state: 'fly', t0: now,
+    tx: ORIGIN[0] + lane, ty: ORIGIN[1] - 144 - (emitted % 3) * 24,
+    side: lane < 0 ? -1 : 1, x: ORIGIN[0], y: ORIGIN[1],
+    speed: k.R < 40 ? 96 : 64,   // px per second: small bubbles are lighter, so faster
+    boost: 0, phase: emitted * 1.7, riseT0: 0,
+  });
+  emitted++;
+}
 const droplets = [];
-function emit(i, now) { const b = bubbles[i]; b.state = 'fly'; b.t0 = now; }
-function pop(i, now) {
-  const b = bubbles[i];
-  if (b.state === 'none') return;
+function pop(b, now) {
   b.state = 'pop'; b.t0 = now;
   // a comic "pop": a ring bursts out and little drops fly away
   const ring = svgEl('circle', { cx: b.x, cy: b.y, r: b.R, fill: 'none', stroke: '#26000f', 'stroke-width': 3 }, bubblesEl);
@@ -451,46 +455,43 @@ function pop(i, now) {
   }
 }
 function bubbleBeat(b, now) {
-  const c = mod(b, 32);
-  if (c < 8) emit(c, now);
-  else if (c >= 20 && c < 28) pop(c - 20, now);
-}
-function syncBubbles(b) {
-  const c = mod(b, 32);
-  bubbles.forEach((bb, i) => {
-    const emitted = c < 8 ? i < c : c < 28;
-    const popped = c >= 20 && c < 28 ? i < c - 20 : false;
-    bb.state = emitted && !popped ? 'rest' : 'none';
-  });
+  emit(now);
+  for (const bb of bubbles) if (bb.state === 'rise') bb.boost += 48;   // each thump pushes them up a bit
 }
 const easeOutCubic = (p) => 1 - Math.pow(1 - p, 3);
 const easeOutBack = (p) => { const k = 2.2; return 1 + (k + 1) * Math.pow(p - 1, 3) + k * Math.pow(p - 1, 2); };
-function drawBubbles(now, t, wob) {
-  for (const b of bubbles) {
-    let x = b.x, y = b.y, s = 1, show = true;
+function drawBubbles(now, t, wob, dt) {
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    let s = 1, drawX = b.x, drawY = b.y;
     if (b.state === 'fly') {
       const p = Math.min(1, (now - b.t0) / 550);
       const e = easeOutCubic(p);
-      // curved path: out of the button, swinging to one side, up to its spot
-      const cx = (ORIGIN[0] + b.x) / 2 + b.side * 120, cy = Math.min(ORIGIN[1], b.y) - 40;
-      x = (1 - e) * (1 - e) * ORIGIN[0] + 2 * (1 - e) * e * cx + e * e * b.x;
-      y = (1 - e) * (1 - e) * ORIGIN[1] + 2 * (1 - e) * e * cy + e * e * b.y;
+      // curved path: out of the button, swinging to one side, up to its release spot
+      const cx = (ORIGIN[0] + b.tx) / 2 + b.side * 120, cy = Math.min(ORIGIN[1], b.ty) - 40;
+      b.x = (1 - e) * (1 - e) * ORIGIN[0] + 2 * (1 - e) * e * cx + e * e * b.tx;
+      b.y = (1 - e) * (1 - e) * ORIGIN[1] + 2 * (1 - e) * e * cy + e * e * b.ty;
+      drawX = b.x; drawY = b.y;
       s = 0.15 + 0.85 * easeOutBack(p);
-      if (p >= 1) b.state = 'rest';
-    } else if (b.state === 'rest') {
+      if (p >= 1) { b.state = 'rise'; b.riseT0 = now; }
+    } else if (b.state === 'rise') {
+      // float up (stops when paused), sway gently side to side, squash with the beat
+      b.y -= (b.speed + b.boost) * dt * energy;
+      b.boost *= Math.exp(-dt * 4);
+      const swayIn = Math.min(1, (now - b.riseT0) / 800);
+      drawX = b.tx + Math.sin((now - b.riseT0) / 1000 * 1.4 + b.phase) * 12 * swayIn - Math.sin(b.phase) * 12 * swayIn;
+      b.x = drawX;
       s = 1 + 0.07 * sx;
-      y -= 4 * sx;
+      drawY = b.y - 4 * sx;
+      if (drawY - b.R * s <= 0) pop(b, now);   // touched the top of the frame
     } else if (b.state === 'pop') {
       const q = now - b.t0;
       if (q < 90) s = 1 + 0.25 * (q / 90);
       else if (q < 200) s = 1.25 * (1 - (q - 90) / 110);
-      else { b.state = 'none'; show = false; }
-    } else show = false;
-    b.wrap.setAttribute('opacity', show ? 1 : 0);
-    if (show) {
-      b.wrap.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${Math.max(0.01, s).toFixed(3)})`);
-      drawBlob(b.blob, t + b.R, wob);
+      else { b.wrap.remove(); bubbles.splice(i, 1); continue; }
     }
+    b.wrap.setAttribute('transform', `translate(${drawX.toFixed(1)},${drawY.toFixed(1)}) scale(${Math.max(0.01, s).toFixed(3)})`);
+    drawBlob(b.blob, t + b.R, wob);
   }
   for (let i = droplets.length - 1; i >= 0; i--) {
     const d = droplets[i], p = (now - d.t0) / (d.ring ? 260 : 420);
@@ -523,7 +524,6 @@ function renderTime() {
 function resync() {
   lastBeat = Math.floor(position * BPS);
   updateLyrics(lastBeat, true);
-  syncBubbles(lastBeat);
   renderTime();
 }
 
@@ -618,7 +618,7 @@ function tick(now) {
   drawBlob(backBlob, t * 0.8, wob * 0.6);
   // the big word squashes a little with the beat, staying readable
   wordBounce.style.transform = `translateY(${(3 * sx).toFixed(2)}px) scale(${(1 + 0.02 * sx).toFixed(4)}, ${(1 - 0.05 * sx).toFixed(4)})`;
-  drawBubbles(now, t, wob);
+  drawBubbles(now, t, wob, dt);
   requestAnimationFrame(tick);
 }
 
