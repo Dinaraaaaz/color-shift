@@ -379,28 +379,45 @@ function updateLyrics(b, jump) {
 }
 
 /* ── Bubbles that pop out of the play button ──
-   One bubble per beat shoots out of the button, then floats up
-   (pushed a little on every beat) and pops when it hits the top of the frame. */
+   UP: one bubble per beat shoots out of the top of the button, floats up
+   (pushed a little on every beat) and pops when it hits the top of the frame.
+   DOWN: a smaller, sparser stream (every other beat) shoots out of the bottom,
+   sinks slowly under the progress line and pops at the bottom of the frame. */
 const bubblesEl = document.getElementById('bubbles');
-const ORIGIN = [408, 488];   // just above the play button (its center is at y 520, level with the playing song)
-// sizes and colors repeat in this order (from the Figma layout)
-const KINDS = [
-  { R: 64, c: LIME }, { R: 26, c: LIME }, { R: 50, c: PINK }, { R: 24, c: LIME },
-  { R: 64, c: PINK }, { R: 42, c: LIME }, { R: 32, c: PINK }, { R: 26, c: LIME },
-];
-// where each bubble is released, left/right of the button, so they spread out
-const LANES = [-200, 120, -80, 200, -160, 40, 160, -24];
+const STREAMS = {
+  up: {
+    dir: -1, origin: [408, 488],          // just above the play button (center y 520, level with the playing song)
+    // sizes and colors repeat in this order (from the Figma layout)
+    kinds: [
+      { R: 64, c: LIME }, { R: 26, c: LIME }, { R: 50, c: PINK }, { R: 24, c: LIME },
+      { R: 64, c: PINK }, { R: 42, c: LIME }, { R: 32, c: PINK }, { R: 26, c: LIME },
+    ],
+    lanes: [-200, 120, -80, 200, -160, 40, 160, -24],   // release spots left/right of the button
+    release: (n) => 488 - 144 - (n % 3) * 24,             // how high they're released
+    speed: (R) => (R < 40 ? 96 : 64),                     // px per second: small ones are lighter, so faster
+    count: 0,
+  },
+  down: {
+    dir: 1, origin: [408, 552],           // just below the play button's center
+    kinds: [{ R: 42, c: PINK }, { R: 26, c: LIME }, { R: 32, c: LIME }, { R: 24, c: PINK }, { R: 36, c: LIME }, { R: 26, c: PINK }],
+    lanes: [-232, 168, -104, 248, -176, 72],
+    release: (n) => 752 + (n % 3) * 16,   // below the progress line and times
+    speed: (R) => (R < 30 ? 40 : 28),     // they sink slowly, so they hang around the empty space
+    count: 0,
+  },
+};
 const bubbles = [];
 let emitted = 0;
-function emit(now) {
-  const k = KINDS[emitted % KINDS.length], lane = LANES[emitted % LANES.length];
+function emit(now, st) {
+  const n = st.count++;
+  const k = st.kinds[n % st.kinds.length], lane = st.lanes[n % st.lanes.length];
   const wrap = svgEl('g', {}, bubblesEl);
   const blob = makeBlob(wrap, { seed: 101 + emitted * 37, R: k.R, fill: k.c, edge: 3, drop: 6 });   // same edge + shadow for every color
   bubbles.push({
-    ...k, wrap, blob, state: 'fly', t0: now,
-    tx: ORIGIN[0] + lane, ty: ORIGIN[1] - 144 - (emitted % 3) * 24,
-    side: lane < 0 ? -1 : 1, x: ORIGIN[0], y: ORIGIN[1],
-    speed: k.R < 40 ? 96 : 64,   // px per second: small bubbles are lighter, so faster
+    ...k, wrap, blob, state: 'fly', t0: now, dir: st.dir, origin: st.origin,
+    tx: st.origin[0] + lane, ty: st.release(n),
+    side: lane < 0 ? -1 : 1, x: st.origin[0], y: st.origin[1],
+    speed: st.speed(k.R),
     boost: 0, phase: emitted * 1.7, riseT0: 0,
   });
   emitted++;
@@ -418,8 +435,9 @@ function pop(b, now) {
   }
 }
 function bubbleBeat(b, now) {
-  emit(now);
-  for (const bb of bubbles) if (bb.state === 'rise') bb.boost += 48;   // each thump pushes them up a bit
+  emit(now, STREAMS.up);
+  if (b % 2 === 1) emit(now, STREAMS.down);   // every other beat, between the strong ones
+  for (const bb of bubbles) if (bb.state === 'rise') bb.boost += bb.dir < 0 ? 48 : 24;   // each thump pushes them along a bit
 }
 const easeOutCubic = (p) => 1 - Math.pow(1 - p, 3);
 const easeOutBack = (p) => { const k = 2.2; return 1 + (k + 1) * Math.pow(p - 1, 3) + k * Math.pow(p - 1, 2); };
@@ -430,23 +448,25 @@ function drawBubbles(now, t, wob, dt) {
     if (b.state === 'fly') {
       const p = Math.min(1, (now - b.t0) / 550);
       const e = easeOutCubic(p);
-      // curved path: out of the button, swinging to one side, up to its release spot
-      const cx = (ORIGIN[0] + b.tx) / 2 + b.side * 120, cy = Math.min(ORIGIN[1], b.ty) - 40;
-      b.x = (1 - e) * (1 - e) * ORIGIN[0] + 2 * (1 - e) * e * cx + e * e * b.tx;
-      b.y = (1 - e) * (1 - e) * ORIGIN[1] + 2 * (1 - e) * e * cy + e * e * b.ty;
+      // curved path: out of the button, swinging to one side, to its release spot
+      const O = b.origin;
+      const cx = (O[0] + b.tx) / 2 + b.side * 120;
+      const cy = b.dir < 0 ? Math.min(O[1], b.ty) - 40 : Math.max(O[1], b.ty) + 40;
+      b.x = (1 - e) * (1 - e) * O[0] + 2 * (1 - e) * e * cx + e * e * b.tx;
+      b.y = (1 - e) * (1 - e) * O[1] + 2 * (1 - e) * e * cy + e * e * b.ty;
       drawX = b.x; drawY = b.y;
       s = 0.15 + 0.85 * easeOutBack(p);
       if (p >= 1) { b.state = 'rise'; b.riseT0 = now; }
     } else if (b.state === 'rise') {
-      // float up (stops when paused), sway gently side to side, squash with the beat
-      b.y -= (b.speed + b.boost) * dt * energy;
+      // float up or sink down (stops when paused), sway gently side to side, squash with the beat
+      b.y += b.dir * (b.speed + b.boost) * dt * energy;
       b.boost *= Math.exp(-dt * 4);
       const swayIn = Math.min(1, (now - b.riseT0) / 800);
       drawX = b.tx + Math.sin((now - b.riseT0) / 1000 * 1.4 + b.phase) * 12 * swayIn - Math.sin(b.phase) * 12 * swayIn;
       b.x = drawX;
       s = 1 + 0.07 * sx;
       drawY = b.y - 4 * sx;
-      if (drawY - b.R * s <= 0) pop(b, now);   // touched the top of the frame
+      if (b.dir < 0 ? drawY - b.R * s <= 0 : drawY + b.R * s >= 900) pop(b, now);   // touched the top / bottom of the frame
     } else if (b.state === 'pop') {
       const q = now - b.t0;
       if (q < 90) s = 1 + 0.25 * (q / 90);
