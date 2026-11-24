@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cool and Calm · prototype</title>
+<style>
+  /* ── Tokens ───────────────────────────────────────────────
+     8px grid: every margin, padding and gap is a multiple of 8. */
+  :root {
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+    --space-6: 48px;
+    --space-8: 64px;
+
+    /* The three colors (Figma: Color 1, 2, 3) */
+    --c1: #95b6bf;   /* mist: light */
+    --c2: #317082;   /* deep blue-teal: middle */
+    --c3: #183740;   /* night: dark */
+    --white: #ffffff;
+    --white-soft: rgba(255, 255, 255, 0.72);
+    --tile: rgba(149, 182, 191, 0.86);   /* Color 1, slightly see-through */
+    --tag:  rgba(149, 182, 191, 0.55);
+
+    --sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --stroke: 2px;   /* sharp thin lines for the small icons */
+  }
+
+  html, body { margin: 0; height: 100%; background: var(--c3); overflow: hidden; }
+
+  /* The screen is always 1440×900, scaled to fit the window */
+  .stage {
+    position: absolute; left: 50%; top: 50%;
+    width: 1440px; height: 900px;
+    transform-origin: 0 0;
+    overflow: hidden;
+    color: var(--white);
+    font-family: var(--sans);
+    background: var(--c2);
+  }
+
+  /* ── Background: the artist portrait, tinted live with the three colors (tritone) ── */
+  .portrait {
+    position: absolute; width: 1800px; height: 1800px;   /* zoomed in so the face fills the screen */
+    left: -196px; top: -522px;
+    filter: url(#tritone);
+    user-select: none; pointer-events: none;
+  }
+
+  /* ── Icons: thin, sharp lines ── */
+  .icon { fill: none; stroke: currentColor; stroke-linecap: butt; stroke-linejoin: miter; }
+  .icon path { stroke-width: var(--stroke); vector-effect: non-scaling-stroke; }
+
+  button { all: unset; cursor: pointer; box-sizing: border-box; }
+  button:focus-visible { outline: 2px solid var(--white); outline-offset: 4px; }   /* 4px: deliberate half step */
+
+  /* ── Left column: back/collapse, tags, sound line, lyrics ── */
+  .left {
+    position: absolute; left: var(--space-8); top: var(--space-4);
+    width: 840px; height: 832px;    /* 840 = up to 64px before the tiles; 832 = same height as the tiles */
+  }
+
+  .top { display: flex; justify-content: space-between; height: 48px; }
+  .top button { width: 48px; height: 48px; display: grid; place-items: center; color: var(--white); }
+  .top .icon { width: 32px; height: 32px; transition: transform 0.25s cubic-bezier(.2, .8, .2, 1); }
+  .top .back:hover .icon, .top .back:focus-visible .icon { transform: translateX(-4px); }
+  .top .collapse:hover .icon, .top .collapse:focus-visible .icon { transform: scale(0.88); }
+
+  .tags { margin-top: var(--space-4); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+  .tag {
+    margin: 0; padding: var(--space-1) var(--space-2);
+    font-size: 20px; line-height: 32px; font-weight: 400;
+    background: var(--tag);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .tag.artist { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+
+  /* Sound line: thin bars that pulse with the music AND show progress.
+     Bars already played fade into the fog; the bright line is "now". Click or drag to jump. */
+  .sound { position: absolute; left: 0; top: 304px; width: 576px; }   /* roughly centered between tags and lyrics */
+  .sound canvas { display: block; width: 576px; height: 176px; cursor: pointer; touch-action: none; }
+  .times {
+    margin-top: var(--space-2); display: flex; justify-content: space-between;
+    font-size: 16px; line-height: 16px; letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums; color: var(--white-soft);
+  }
+
+  /* Lyrics: 4 lines visible. The line being sung is always the 2nd one, in bold.
+     Each new line moves the whole block up by one line. */
+  .lyrics {
+    position: absolute; left: 0; bottom: 0; width: 840px; height: 192px;   /* 4 lines × 48px */
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 176px, transparent 192px);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 176px, transparent 192px);
+    transition: opacity 0.8s ease;
+  }
+  .lines { margin: 0; padding: 0; list-style: none; transition: transform 0.6s cubic-bezier(.4, 0, .2, 1); }
+  .lines li {
+    font-size: 28px; line-height: 48px; font-weight: 300; white-space: nowrap;
+    opacity: 0.82; transition: opacity 0.6s ease;
+  }
+  .lines li.past { opacity: 0.5; }
+  .lines li.now  { font-weight: 600; opacity: 1; }
+  .paused .lyrics { opacity: 0.6; }
+
+  /* ── Right column: the tile grid ── */
+  .tiles {
+    position: absolute; right: var(--space-8); top: var(--space-4);
+    width: 408px; height: 832px;
+    display: grid; gap: var(--space-3);
+    grid-template-columns: 192px 192px;
+    grid-template-rows: 192px 400px 192px;
+    grid-template-areas: "prev next" "play play" "shuffle repeat";
+  }
+  .tile {
+    display: grid; place-items: center;
+    background: var(--tile); color: var(--white);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .tile .icon { width: 80px; height: 80px; }
+  /* Hover: the tile turns solid and the icon goes dark. Instant, like Warm and Calm. */
+  .tile:hover, .tile:focus-visible { background: var(--c1); color: var(--c3); }
+  .tile.toggle.off .icon { opacity: 0.45; }
+  .tile.toggle.off:hover .icon { opacity: 0.8; }
+
+  .prev { grid-area: prev; } .next { grid-area: next; }
+  .shuffle { grid-area: shuffle; } .repeat { grid-area: repeat; }
+  .play { grid-area: play; color: var(--c3); }
+  .play .icon { width: 200px; height: 200px; }
+  .play .icon path { stroke-width: 6px; }
+  .play:hover { color: var(--c2); }
+</style>
+</head>
+<body>
+
+<!-- Tritone: black → Color 3, mid grey → Color 2, white → Color 1 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="tritone" color-interpolation-filters="sRGB">
+    <feColorMatrix type="saturate" values="0"/>
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues="0.094 0.192 0.584"/>
+      <feFuncG type="table" tableValues="0.216 0.439 0.714"/>
+      <feFuncB type="table" tableValues="0.251 0.510 0.749"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
+<div class="stage" id="stage">
+  <!-- Photo: Mason C on Unsplash (unsplash.com/photos/_HAZod2kpcM) -->
+  <img class="portrait" src="images/cool-calm-portrait.jpg" alt="">
+
+  <div class="left" id="ui">
+    <div class="top">
+      <button class="back" aria-label="Back">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M20 12H4.5"/><path d="M10.5 6L4.5 12L10.5 18"/></svg>
+      </button>
+      <button class="collapse" aria-label="Collapse">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M20 4L14 10"/><path d="M14 5V10H19"/><path d="M4 20L10 14"/><path d="M5 14H10V19"/></svg>
+      </button>
+    </div>
+
+    <div class="tags">
+      <p class="tag artist">Ilse Varden</p>
+      <p class="tag">Where the fog keeps you</p>
+    </div>
+
+    <div class="sound">
+      <canvas id="wave" aria-label="Song progress, 01:49 of 05:00" role="slider" aria-valuemin="0" aria-valuemax="300" aria-valuenow="109"></canvas>
+      <div class="times"><span id="now">01:49</span><span>05:00</span></div>
+    </div>
+
+    <div class="lyrics" aria-live="polite"><ul class="lines" id="lines"></ul></div>
+  </div>
+
+  <div class="tiles">
+    <button class="tile prev" aria-label="Previous song">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M18 6.5L9.5 12L18 17.5Z"/><path d="M6 6V18"/></svg>
+    </button>
+    <button class="tile next" aria-label="Next song">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 6.5L14.5 12L6 17.5Z"/><path d="M18 6V18"/></svg>
+    </button>
+    <button class="tile play" id="play" aria-label="Pause">
+      <svg class="icon" id="playIcon" viewBox="0 0 24 24"><path d="M9 6V18"/><path d="M15 6V18"/></svg>
+    </button>
+    <button class="tile toggle off shuffle" id="shuffle" aria-label="Shuffle" aria-pressed="false">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M3 7H7.5L16.5 17H21"/><path d="M3 17H7.5L10.6 13.5"/><path d="M13.4 10.5L16.5 7H21"/><path d="M18 4L21 7L18 10"/><path d="M18 14L21 17L18 20"/></svg>
+    </button>
+    <button class="tile toggle off repeat" id="repeat" aria-label="Repeat" aria-pressed="false">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 12V7.5H18.5"/><path d="M15.5 4.5L18.5 7.5L15.5 10.5"/><path d="M20 12V16.5H5.5"/><path d="M8.5 13.5L5.5 16.5L8.5 19.5"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ── Tuning knobs for the sound line ── */
+const BAR_GAP      = 24;    // px between bars (576 / 24 = 25 bars)
+const BAR_WIDTH    = 2;     // px
+const SWELL        = 64;    // how much the bars rise around "now" (px)
+const SWELL_WIDTH  = 56;    // how far that rise spreads to each side (px)
+const PULSE        = 0.35;  // how much the bars move with the music (0 = still, 1 = wild)
+const PLAYED_ALPHA = 0.35;  // played bars fade into the fog
+const AHEAD_ALPHA  = 0.8;   // bars still to come
+
+/* ── Fit the 1440×900 screen into the window ── */
+const stage = document.getElementById('stage');
+function fit() {
+  const s = Math.min(innerWidth / 1440, innerHeight / 900);
+  stage.style.transform = `scale(${s}) translate(-50%, -50%)`;
+}
+addEventListener('resize', fit); fit();
+
+/* ── The song: plays in real time from 1:49, stops at 5:00 ── */
+const SONG_LENGTH = 300;
+const START_AT = 109;
+const LINE_SECONDS = 3;   // a new lyric line every 3 seconds
+
+/* LYRICS of "Where the Fog Keeps You" by Ilse Varden (made up). */
+const CHORUS = [
+  'so stay where the fog keeps you',
+  'soft and almost near',
+  'I can hear you in the quiet',
+  "I just can't see you here",
+  'stay where the fog keeps you',
+  'half a face, half a glow',
+  'if the morning never clears',
+  'I will never have to know',
+];
+const LYRICS = [
+  'I walked out past the birches',
+  'where the morning loses shape',
+  'your name was in the white air',
+  "like a door I couldn't take",
+  'the lake forgot its edges',
+  'the road forgot its end',
+  "I said I'd wait until it lifted",
+  'I am saying it again',
+  ...CHORUS,
+  'the window holds your outline',
+  'the kettle holds the heat',
+  'there are footsteps in the frost',
+  "that don't belong to my feet",
+  'I keep the porch light burning',
+  'though it barely finds the ground',
+  'everything is listening',
+  'nothing makes a sound',
+  ...CHORUS,
+  'and if it lifts tomorrow',
+  'let it lift slow',
+  'let me have the grey a little longer',
+  'let me have the grey',
+  ...CHORUS,                      // at 1:49 the bold line is the chorus opening
+  'where the fog keeps you',
+  'where the fog keeps you',
+  'soft and almost near',
+];
+
+/* One list item per 3-second slot of the whole song (the lyrics loop if they run out). */
+const linesEl = document.getElementById('lines');
+const SLOTS = Math.ceil(SONG_LENGTH / LINE_SECONDS);
+const items = [];
+for (let k = 0; k < SLOTS; k++) {
+  const li = document.createElement('li');
+  li.textContent = LYRICS[k % LYRICS.length];
+  linesEl.appendChild(li);
+  items.push(li);
+}
+let lineIndex = -1;
+function showLine(k, jump) {
+  if (k === lineIndex) return;
+  const far = Math.abs(k - lineIndex) > 2;
+  if (lineIndex >= 0) items[lineIndex].classList.remove('now');
+  items.forEach((li, i) => li.classList.toggle('past', i < k));
+  items[k].classList.add('now');
+  // the current line sits in the 2nd row: shift the list so line k-1 is at the top
+  if (far || jump) linesEl.style.transition = 'none';
+  linesEl.style.transform = `translateY(${-(k - 1) * 48}px)`;
+  if (far || jump) { linesEl.getBoundingClientRect(); linesEl.style.transition = ''; }
+  lineIndex = k;
+}
+
+let position = START_AT;
+const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const nowEl = document.getElementById('now');
+
+/* ── Sound line ── */
+const wave = document.getElementById('wave');
+const W = 576, H = 176;
+const dpr = window.devicePixelRatio || 1;
+wave.width = (W + BAR_WIDTH) * dpr; wave.height = H * dpr;
+wave.style.width = (W + BAR_WIDTH) + 'px';
+const ctx = wave.getContext('2d');
+ctx.scale(dpr, dpr);
+const BARS = Math.floor(W / BAR_GAP) + 1;
+// each bar has its own resting height, like the shape of the song
+const rest = Array.from({ length: BARS }, (_, i) => 40 + 24 * Math.sin(i * 1.7) ** 2 + 16 * Math.sin(i * 0.45 + 1) ** 2);
+let energy = 1;   // 1 while playing, eases to 0 when paused (the line goes quiet)
+
+function drawWave(t) {
+  ctx.clearRect(0, 0, W + BAR_WIDTH, H);
+  const px = position / SONG_LENGTH * W;
+  for (let i = 0; i < BARS; i++) {
+    const x = i * BAR_GAP;
+    const d = x - px;
+    const swell = SWELL * Math.exp(-((d / SWELL_WIDTH) ** 2));
+    const wobble = Math.sin(t * 0.0042 + i * 2.1) * 0.6 + Math.sin(t * 0.0067 + i * 0.9) * 0.4;
+    const live = rest[i] * (1 + PULSE * wobble) + swell * (0.85 + 0.15 * Math.sin(t * 0.009 + i));
+    const quiet = 16;
+    const h = quiet + (live - quiet) * energy;
+    ctx.fillStyle = `rgba(255,255,255,${d < 0 ? PLAYED_ALPHA : AHEAD_ALPHA})`;
+    ctx.fillRect(x, (H - h) / 2, BAR_WIDTH, h);
+  }
+  // "now": one bright line through the full height
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(Math.round(px), 0, BAR_WIDTH, H);
+}
+
+function render(jump) {
+  nowEl.textContent = fmt(position);
+  wave.setAttribute('aria-valuenow', String(Math.floor(position)));
+  wave.setAttribute('aria-label', `Song progress, ${fmt(position)} of 05:00`);
+  showLine(Math.min(SLOTS - 1, Math.floor(position / LINE_SECONDS)), jump);
+}
+
+let last = null;
+function tick(ms) {
+  const dt = last === null ? 0 : (ms - last) / 1000;
+  last = ms;
+  if (playing) {
+    position += dt;
+    if (position >= SONG_LENGTH) { position = SONG_LENGTH; setPlaying(false); }
+    render();
+  }
+  energy += ((playing ? 1 : 0) - energy) * Math.min(1, dt * 2.5);
+  drawWave(ms);
+  requestAnimationFrame(tick);
+}
+
+/* Click or drag on the sound line to jump */
+function seek(e) {
+  const r = wave.getBoundingClientRect();
+  const f = Math.max(0, Math.min(1, (e.clientX - r.left) / (r.width * W / (W + BAR_WIDTH))));
+  position = f * SONG_LENGTH;
+  render(true);
+}
+wave.addEventListener('pointerdown', (e) => { wave.setPointerCapture(e.pointerId); seek(e); });
+wave.addEventListener('pointermove', (e) => { if (wave.hasPointerCapture(e.pointerId)) seek(e); });
+
+/* ── Play / pause, shuffle, repeat ── */
+const ui = document.getElementById('ui');
+const playBtn = document.getElementById('play');
+const playIcon = document.getElementById('playIcon');
+const PAUSE = '<path d="M9 6V18"/><path d="M15 6V18"/>';
+const PLAY  = '<path d="M8.5 5.5L18.5 12L8.5 18.5Z"/>';
+let playing = true;
+function setPlaying(p) {
+  playing = p;
+  playIcon.innerHTML = p ? PAUSE : PLAY;
+  playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+  ui.classList.toggle('paused', !p);
+}
+function togglePlay() {
+  if (!playing && position >= SONG_LENGTH) position = 0;
+  setPlaying(!playing);
+}
+playBtn.addEventListener('click', togglePlay);
+addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); togglePlay(); } });
+for (const id of ['shuffle', 'repeat']) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => {
+    const on = b.classList.toggle('off') === false;
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+
+/* ── Inside Color Shift: back, collapse and Esc close the full-screen view ── */
+function askToCollapse() { if (window.parent !== window) window.parent.postMessage({ colorShift: 'collapse' }, '*'); }
+document.querySelector('.top .back').addEventListener('click', askToCollapse);
+document.querySelector('.top .collapse').addEventListener('click', askToCollapse);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') askToCollapse(); });
+
+render(true);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

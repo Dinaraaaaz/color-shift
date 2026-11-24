@@ -151,8 +151,25 @@ Live as the first photo's design: `warm-calm-prototype.html`, shown inside the t
 - **Open:** a Figma-copyable version of the screen (Copy screen is hidden for live
   designs, see section 9); removing the old unused Dunes screen code.
 
-### Design 2 · Cool and Calm (currently "Fog") — next
-Sketching in Figma.
+### Design 2 · Cool and Calm (currently "Fog") — in progress
+
+First prototype: `cool-calm-prototype.html` (version `cool-calm-proto-v1`), built from
+Figma "Layout_fog_iterated_2".
+
+- **Colors (my own, Figma Color 1–3):** #95B6BF (mist), #317082 (deep blue-teal),
+  #183740 (night). Monochrome.
+- **Background:** a real photo, full screen, tinted live with the three colors (tritone:
+  black → Color 3, greys → Color 2, white → Color 1). The artist portrait *is* the
+  background (Mason C on Unsplash), so there's no second image to clash with.
+- **Layout:** artist and song as small see-through "tags" top left; a grid of square
+  tiles on the right (previous/next, a big pause tile, shuffle/repeat); lyrics bottom left.
+- **Lyrics:** 4 lines visible, the sung line is always the 2nd one, in bold; the block
+  moves up one line at a time.
+- **Sound line:** thin bars that pulse with the music *and* show progress: a bright "now"
+  line moves through it, bars swell around it, played bars fade into the fog. Click or
+  drag to jump. Pause makes the line go quiet.
+- **Type:** Helvetica Neue (Arial on Windows). Icons: thin, sharp lines.
+- Made-up song: "Where the Fog Keeps You" by Ilse Varden.
 
 ### Style "recipes" (important for the iOS app later)
 Each style is written down as its own **recipe in a separate data file**: colors,
